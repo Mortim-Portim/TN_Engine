@@ -5,25 +5,28 @@ import (
 	"marvin/GraphEng/GE"
 	"math"
 )
-const MIN_MOVEMENT_DIF = 0.1
+const MIN_MOVEMENT_DIF = 0.01
 
 type EntityI interface {
 	GE.Drawable
+	Update(frame int, world *World)
 }
 
 type Entity struct {
 	drawable *GE.WObj
 	Pos, Size [2]float64
 	frame *int
+	Update func(frame int, world *World)
 }
-func (e *Entity) Init(d *GE.WObj, frameCounter *int) {
+func (e *Entity) Copy() (e2 *Entity) {
+	e2 = &Entity{e.drawable.Copy(), [2]float64{e.Pos[0], e.Pos[1]}, [2]float64{e.Size[0], e.Size[1]}, e.frame, func(frame int, world *World){}}
+	return
+}
+func (e *Entity) Init(frameCounter *int) {
 	e.updateSize()
 	e.Pos = [2]float64{-1,-1}
 	e.frame = frameCounter
 }
-
-
-
 //Implements EntityI
 func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
 	e.drawable.Update(*e.frame)
@@ -31,7 +34,8 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 }
 //Implements EntityI
 func (e *Entity) GetPos() (float64, float64, int8) {
-	return e.drawable.GetPos()
+	x,y,l := e.drawable.GetPos()
+	return x-1, y-1, l
 }
 //Implements EntityI
 func (e *Entity) Height() float64 {
