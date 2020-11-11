@@ -1,4 +1,4 @@
-package GE
+package TNE
 
 import (
 	"math/rand"
