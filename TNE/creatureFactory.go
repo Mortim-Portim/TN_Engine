@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 )
-const CREATURE_FACTORY_INDEX = "index.txt"
+const INDEX_FILE_NAME = "#index.txt"
 
 func GetCreatureFactory(path string, frameCounter *int, prepare int) (*CreatureFactory, error) {
 	if path[len(path)-1:] != "/" {
@@ -14,7 +14,7 @@ func GetCreatureFactory(path string, frameCounter *int, prepare int) (*CreatureF
 	CF := &CreatureFactory{frameCounter:frameCounter, prepare:prepare}
 	CF.rootPath = path
 	idx := &GE.List{}
-	idx.LoadFromFile(path+CREATURE_FACTORY_INDEX)
+	idx.LoadFromFile(path+INDEX_FILE_NAME)
 	CF.crNames = idx.GetSlice()
 	CF.mapper = make(map[string]int)
 	for i,name := range(CF.crNames) {
@@ -40,6 +40,7 @@ func (cf *CreatureFactory) Load() error {
 		if err != nil {
 			return err
 		}
+		creature.factoryCreationId = int16(i)
 		cf.creatures[i] = creature
 	}
 	return nil
