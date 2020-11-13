@@ -31,7 +31,7 @@ func StartGame(g ebiten.Game) {
 
 
 type TestGame struct {
-	character *TNE.Creature
+	character *TNE.Entity
 	frame int
 }
 func (g *TestGame) Init(screen *ebiten.Image) {}
@@ -39,25 +39,41 @@ func (g *TestGame) Init(screen *ebiten.Image) {}
 var timeTaken int64
 func (g *TestGame) Update(screen *ebiten.Image) error {
 	startTime := time.Now()
-	if g.frame%1 == 0 {
-		if ebiten.IsKeyPressed(ebiten.KeyA) {
-			g.character.ChangeOrientation(0)
+	moving := false
+	if ebiten.IsKeyPressed(ebiten.KeyA) {
+		g.character.ChangeOrientation(0)
+		if GE.IsKeyJustDown(ebiten.KeyA) {
+			g.character.Move(1, FPS/4)
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyD) {
-			g.character.ChangeOrientation(1)
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyW) {
-			g.character.ChangeOrientation(2)
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyS) {
-			g.character.ChangeOrientation(3)
-		}
+		moving = true
 	}
-	if g.frame%(FPS/2) == 0 {
-		g.character.Move(1, FPS/4)
+	if ebiten.IsKeyPressed(ebiten.KeyD) {
+		g.character.ChangeOrientation(1)
+		if GE.IsKeyJustDown(ebiten.KeyD) {
+			g.character.Move(1, FPS/4)
+		}
+		moving = true
 	}
-	g.character.Update(g.character, nil)
+	if ebiten.IsKeyPressed(ebiten.KeyW) {
+		g.character.ChangeOrientation(2)
+		if GE.IsKeyJustDown(ebiten.KeyW) {
+			g.character.Move(1, FPS/4)
+		}
+		moving = true
+	}
+	if ebiten.IsKeyPressed(ebiten.KeyS) {
+		g.character.ChangeOrientation(3)
+		if GE.IsKeyJustDown(ebiten.KeyS) {
+			g.character.Move(1, FPS/4)
+		}
+		moving = true
+	}
+	g.character.KeepMoving(moving)
+	
+	g.character.UpdateAll(nil)
 	g.character.Draw(screen, 255, 0, 0, 0, 0, 100)
+	
+	fmt.Println(g.character.Print())
 	
 	g.frame ++
 	timeTaken = time.Now().Sub(startTime).Milliseconds()
@@ -65,7 +81,7 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 	msg := fmt.Sprintf(`TPS: %0.2f, Updating took: %v at frame %v`, fps, timeTaken, g.frame-1)
 	ebitenutil.DebugPrint(screen, msg)
 	GE.LogToFile(msg+"\n")
-	fmt.Println(msg)
+	//fmt.Println(msg)
 	return nil
 }
 func (g *TestGame) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -82,7 +98,7 @@ func main() {
 	GE.ShitImDying(err)
 	
 	prepStart := time.Now()
-	go cf.Prepare()
+	cf.Prepare()
 	fmt.Println("Preparing took: ", time.Now().Sub(prepStart))
 	
 	getStart := time.Now()
@@ -93,7 +109,7 @@ func main() {
 	c.RegiserUpdateFunc(func(e TNE.EntityI, world *TNE.World) {
 		//fmt.Println("Updating creature, frame: ", frame)
 	})
-	game.character = c
+	game.character = &c.Entity
 	
 	game.Init(nil)
 	StartGame(game)

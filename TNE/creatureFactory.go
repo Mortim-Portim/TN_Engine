@@ -36,10 +36,11 @@ type CreatureFactory struct {
 func (cf *CreatureFactory) Load() error {
 	cf.creatures = make([]*Creature, len(cf.crNames))
 	for i,name := range(cf.crNames) {
-		creature, err := LoadCreature(cf.rootPath+name, cf.frameCounter)
+		ent, err := LoadEntity(cf.rootPath+name, cf.frameCounter)
 		if err != nil {
 			return err
 		}
+		creature := &Creature{Entity:*ent}
 		creature.factoryCreationId = int16(i)
 		cf.creatures[i] = creature
 	}
@@ -85,4 +86,8 @@ func (cf *CreatureFactory) Get(idx int) (cr *Creature) {
 		}
 	}
 	return
+}
+
+func (cf *CreatureFactory) CreatureNames() []string {
+	return cf.crNames
 }
