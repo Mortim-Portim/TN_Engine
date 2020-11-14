@@ -3,6 +3,6 @@ spriteWidth:    16
 updatePeriod:   6
 hitBoxWidth:    1
 hitBoxHeight:   1
-XPos:           0
-YPos:           0
+XPos:           16
+YPos:           9
 layer:          0

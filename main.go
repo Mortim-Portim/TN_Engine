@@ -31,7 +31,8 @@ func StartGame(g ebiten.Game) {
 
 
 type TestGame struct {
-	character *TNE.Entity
+	character *TNE.Player
+	world     *TNE.World
 	frame int
 }
 func (g *TestGame) Init(screen *ebiten.Image) {}
@@ -69,16 +70,19 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 		moving = true
 	}
 	g.character.KeepMoving(moving)
+	//g.character.UpdateAll(nil)
+	//g.character.Draw(screen, 255, 0, 0, 0, 0, 100)
+	//fmt.Println(g.character.Print())
 	
-	g.character.UpdateAll(nil)
-	g.character.Draw(screen, 255, 0, 0, 0, 0, 100)
-	
-	fmt.Println(g.character.Print())
+	g.world.UpdateActivePlayer()
+	g.world.UpdateDrawables()
+	g.world.UpdateWorldStructure()
+	g.world.Draw(screen)
 	
 	g.frame ++
 	timeTaken = time.Now().Sub(startTime).Milliseconds()
 	fps := ebiten.CurrentTPS()
-	msg := fmt.Sprintf(`TPS: %0.2f, Updating took: %v at frame %v`, fps, timeTaken, g.frame-1)
+	msg := fmt.Sprintf(`TPS: %0.2f, Updating took: %v at frame %v, isMoving: %v`, fps, timeTaken, g.frame-1, moving)
 	ebitenutil.DebugPrint(screen, msg)
 	GE.LogToFile(msg+"\n")
 	//fmt.Println(msg)
@@ -92,7 +96,12 @@ func main() {
 	GE.SetLogFile("./res/log.txt")
 	time.Sleep(time.Second*2)
 	
-	game := &TestGame{nil, 0}
+	diceStart := time.Now()
+	result := TNE.RollDice(100000, 20)
+	fmt.Println("Rolling Dice took: ", time.Now().Sub(diceStart))
+	fmt.Println(result)
+	
+	game := &TestGame{nil, nil, 0}
 	
 	cf, err := TNE.GetCreatureFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
@@ -109,7 +118,15 @@ func main() {
 	c.RegiserUpdateFunc(func(e TNE.EntityI, world *TNE.World) {
 		//fmt.Println("Updating creature, frame: ", frame)
 	})
-	game.character = &c.Entity
+	game.character = &TNE.Player{TNE.Race{c.Entity}}
+	
+	game.world = TNE.GetWorld(0,0,screenWidth,screenHeight, 32, 18, 4,6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
+	game.world.AddPlayer(game.character)
+	err = game.world.SetActivePlayer(0)
+	GE.ShitImDying(err)
+	//game.world.Structure.SetMiddleSmooth(0, 0)
+	
+	fmt.Println(game.world.Print())
 	
 	game.Init(nil)
 	StartGame(game)

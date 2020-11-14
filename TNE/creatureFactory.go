@@ -33,6 +33,11 @@ type CreatureFactory struct {
 	prepare			int
 	frameCounter 	*int
 }
+func (cf *CreatureFactory) Print() (out string) {
+	out = fmt.Sprintf("Path: %v, crNames: %v, creatures: %v, prepare: %v, frame: %v",
+		cf.rootPath, cf.crNames, len(cf.creatures), cf.prepare, *cf.frameCounter)
+	return
+}
 func (cf *CreatureFactory) Load() error {
 	cf.creatures = make([]*Creature, len(cf.crNames))
 	for i,name := range(cf.crNames) {
@@ -50,16 +55,25 @@ func (cf *CreatureFactory) Load() error {
 //Use prepare in order to save time during runtime
 //Takes ~30.000ns
 func (cf *CreatureFactory) Prepare() {
+	//done := make(chan bool)
 	for i,cr := range(cf.creatures) {
-		if len(cf.prepared[i]) != cf.prepare {
-			cf.prepared[i] = make([]*Creature, cf.prepare)
-		}
-		for idx,_ := range(cf.prepared[i]) {
-			if cf.prepared[i][idx] == nil {
-				cf.prepared[i][idx] = cr.Copy()
+		func(){
+			if len(cf.prepared[i]) != cf.prepare {
+				cf.prepared[i] = make([]*Creature, cf.prepare)
 			}
-		}
+			for idx,_ := range(cf.prepared[i]) {
+				if cf.prepared[i][idx] == nil {
+					cf.prepared[i][idx] = cr.Copy()
+				}
+			}
+			//done <- true
+		}()
 	}
+	/**
+	for range(cf.creatures) {
+		<- done
+	}
+	**/
 }
 //Slower than Get ~1000ns
 func (cf *CreatureFactory) GetByName(name string) (*Creature, error) {

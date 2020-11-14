@@ -60,9 +60,8 @@ type Entity struct {
 }
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
-	e2 = &Entity{WObj:*e.WObj.Copy(), currentAnim:e.currentAnim, xPos:e.xPos, yPos:e.yPos, orientation:e.orientation,
-		neworientation:e.neworientation, isMoving:e.isMoving, keepMoving:e.keepMoving, movingFrames:e.movingFrames, 
-		movedFrames:e.movedFrames, movingStepSize:e.movingStepSize, changed:e.changed, factoryCreationId:e.factoryCreationId}
+	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving,
+		e.keepMoving, e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i,anim := range(e.anims) {
 		if anim != nil {
@@ -82,6 +81,8 @@ func (e *Entity) UpdateAll(w *World) {
 				e.movedFrames = 0
 				e.moveInDirection(e.orientation)
 				e.movedFrames ++
+			}else{
+				e.changed = true
 			}
 		}else{
 			e.moveInDirection(e.orientation)
@@ -97,6 +98,7 @@ func (e *Entity) Bounds() (float64, float64) {
 }
 //Initiates a move action with a specific lenght an duration
 func (e *Entity) Move(length, frames int) {
+	fmt.Println("Start moving")
 	if e.isMoving {
 		return
 	}
@@ -132,7 +134,6 @@ func (e *Entity) ChangeOrientation(newO uint8) {
 		}else{
 			e.orientation = newO
 		}
-		e.changed = true
 	}
 }
 //Updates the Orientation animation, ONLY call this if really necassary
@@ -163,8 +164,8 @@ func (e *Entity) moveInDirection(dir uint8) {
 	e.setIntPos()
 }
 //Implements EntityI
-func (e *Entity) Height() float64 {
-	return e.WObj.Height()
+func (e *Entity) GetDrawBox() *GE.Rectangle {
+	return e.WObj.GetDrawBox()
 }
 //Implements EntityI
 func (e *Entity) GetPos() (float64, float64, int8) {
@@ -231,11 +232,11 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 		anim, _ := GE.GetDayNightAnimFromParams(1,1,1,1, path+anim_n+".txt", path+anim_n+".png")
 		e.anims = append(e.anims, anim)
 	}
-	
+	e.setIntPos()
 	return e, nil
 }
 func (e *Entity) SetAnim(idx int) {
-	if idx < 0 || idx >= len(e.anims) || e.anims[idx] == nil {
+	if e.currentAnim == uint8(idx) || idx < 0 || idx >= len(e.anims) || e.anims[idx] == nil {
 		return
 	}
 	e.currentAnim = uint8(idx)
