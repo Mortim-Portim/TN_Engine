@@ -33,6 +33,7 @@ func StartGame(g ebiten.Game) {
 type TestGame struct {
 	character *TNE.Player
 	world     *TNE.World
+	rec  *GE.Recorder
 	frame int
 }
 func (g *TestGame) Init(screen *ebiten.Image) {}
@@ -79,6 +80,11 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 	g.world.UpdateWorldStructure()
 	g.world.Draw(screen)
 	
+	if ebiten.IsKeyPressed(ebiten.KeyC) && !g.rec.IsSaving() {
+		g.rec.Save("./res/out")
+	}
+	g.rec.NextFrame(screen)
+	
 	g.frame ++
 	timeTaken = time.Now().Sub(startTime).Milliseconds()
 	fps := ebiten.CurrentTPS()
@@ -101,7 +107,7 @@ func main() {
 	fmt.Println("Rolling Dice took: ", time.Now().Sub(diceStart))
 	fmt.Println(result)
 	
-	game := &TestGame{nil, nil, 0}
+	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 1280, 720, FPS), 0}
 	
 	cf, err := TNE.GetCreatureFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
@@ -111,7 +117,7 @@ func main() {
 	fmt.Println("Preparing took: ", time.Now().Sub(prepStart))
 	
 	getStart := time.Now()
-	c := cf.Get(0)
+	c := cf.Get(1)
 	//GE.ShitImDying(err)
 	fmt.Println("Getting took: ", time.Now().Sub(getStart))
 	
@@ -120,7 +126,7 @@ func main() {
 	})
 	game.character = &TNE.Player{TNE.Race{c.Entity}}
 	
-	game.world = TNE.GetWorld(0,0,screenWidth,screenHeight, 32, 18, 4,6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
+	game.world = TNE.GetWorld(0,0,screenWidth,screenHeight, 16, 9, 4,6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
 	game.world.AddPlayer(game.character)
 	err = game.world.SetActivePlayer(0)
 	GE.ShitImDying(err)

@@ -131,7 +131,7 @@ func (w *World) UpdateActivePlayer() {
 	activePlayer := w.Players[w.ActivePlayer]
 	activePlayer.Update(w)
 	if activePlayer.Changed() {
-		fmt.Println("Player changed")
+		//fmt.Println("Player changed")
 		w.ActivePlayerChange = true
 		activePlayer.NotChangedAnymore()
 	}
