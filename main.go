@@ -3,7 +3,7 @@ package main
 import (
 	"marvin/TN_Engine/TNE"
 	"marvin/GraphEng/GE"
-	
+	"runtime"
 	"github.com/hajimehoshi/ebiten"
 	"fmt"
 	"time"
@@ -88,14 +88,28 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 	g.frame ++
 	timeTaken = time.Now().Sub(startTime).Milliseconds()
 	fps := ebiten.CurrentTPS()
-	msg := fmt.Sprintf(`TPS: %0.2f, Updating took: %v at frame %v, isMoving: %v`, fps, timeTaken, g.frame-1, moving)
+	msg := fmt.Sprintf(`TPS: %0.2f, Updating took: %v at frame %v`, fps, timeTaken, g.frame-1)
 	ebitenutil.DebugPrint(screen, msg)
 	GE.LogToFile(msg+"\n")
 	//fmt.Println(msg)
+	//fmt.Println(PrintMemUsage())
 	return nil
 }
 func (g *TestGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
+}
+func PrintMemUsage() (out string) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	out = fmt.Sprintf("Alloc = %v MiB", bToMb(m.Alloc))
+	out += fmt.Sprintf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	out += fmt.Sprintf("\tSys = %v MiB", bToMb(m.Sys))
+	out += fmt.Sprintf("\tNumGC = %v\n", m.NumGC)
+	return 
+}
+func bToMb(b uint64) uint64 {
+    return b / 1024 / 1024
 }
 func main() {
 	GE.Init("")
@@ -107,7 +121,7 @@ func main() {
 	fmt.Println("Rolling Dice took: ", time.Now().Sub(diceStart))
 	fmt.Println(result)
 	
-	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 1280, 720, FPS), 0}
+	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 960, 540, FPS), 0}
 	
 	cf, err := TNE.GetCreatureFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
