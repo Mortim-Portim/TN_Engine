@@ -9,8 +9,7 @@ import (
 var ERR_UNKNOWN_PLAYER = errors.New("Unknown player")
 /**
 TODO
-write a display-method for the world (sets tW, tH, moves with player)
-add a player
+Test entity movement
 
 syncronize players, entitys, lightlevel
 **/

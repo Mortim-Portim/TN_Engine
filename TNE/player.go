@@ -6,7 +6,7 @@ import (
 )
 const MIN_MOVMENT_DIFF = 0.2
 
-//Should load the player from a file, assigning the necassary race and loading all stats
+//SHOULD load the player from a file, assigning the necassary race and loading all stats
 func GetPlayer() *Player {
 	p := &Player{}
 	return p
@@ -22,7 +22,7 @@ func (p *Player) Copy() (p2 *Player) {
 func (p *Player) Update(w *World) {
 	p.Race.UpdateAll(w)
 }
-//SHOULD move the world to the players position
+//moves the world to the players position
 func (p *Player) MoveWorld(w *World) {
 	xip, yip := p.IntPos()
 	xiw, yiw := w.Structure.Middle()	

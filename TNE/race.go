@@ -4,6 +4,7 @@ import (
 
 )
 
+//SHOULD contain information about the races stats
 type Race struct {
 	Entity
 }

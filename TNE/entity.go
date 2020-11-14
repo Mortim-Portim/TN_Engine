@@ -98,7 +98,6 @@ func (e *Entity) Bounds() (float64, float64) {
 }
 //Initiates a move action with a specific lenght an duration
 func (e *Entity) Move(length, frames int) {
-	fmt.Println("Start moving")
 	if e.isMoving {
 		return
 	}

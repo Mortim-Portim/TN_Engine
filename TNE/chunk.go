@@ -13,6 +13,7 @@ var ERR_UNKNOWN_ENTITY_ID = errors.New("Unknown Entity ID")
 var ERR_ENTITY_NOT_IN_THIS_CHUNK = errors.New("Entity not in this chunk")
 var ERR_ENTITY_DOES_NOT_EXIST = errors.New("Entity does not exist")
 
+//tmpPath is a path to a temporary file used for saving the chunk
 func GetChunk(x,y int, cf *CreatureFactory, tmpPath string) (c *Chunk) {
 	c = &Chunk{pos:[2]int16{int16(x),int16(y)}, cf:cf, tmpPath:tmpPath}
 	c.tileLT = [2]int16{CHUNK_SIZE*c.pos[0], CHUNK_SIZE*c.pos[1]}
@@ -32,6 +33,7 @@ type Chunk struct {
 	changed bool
 	LastUpdateFrame, LastDrawFrame int
 }
+//Adds all entities of the chunk to drawables
 func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 	for _,l := range(c.entities) {
 		for _,ent := range(l) {
@@ -39,13 +41,7 @@ func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 		}
 	}
 }
-//func (c *Chunk) RemoveFromDrawables(dws *GE.Drawables) {
-//	for _,l := range(c.entities) {
-//		for _,ent := range(l) {
-//			dws.Remove(ent)
-//		}
-//	}
-//}
+//Adds an Entity to the chunk
 func (c *Chunk) AddEntity(e EntityI) error {
 	id := int(e.FactoryCreationID())
 	rx,ry,err := c.RelPosOfEntity(e)
@@ -65,6 +61,7 @@ func (c *Chunk) AddEntity(e EntityI) error {
 	}
 	return nil
 }
+//Updates the chunk, returning removed entities
 func (c *Chunk) Update(w *World) (removed []*chunkEntity) {
 	removed = make([]*chunkEntity, 0)
 	for fcID,l := range(c.entities) {
@@ -88,6 +85,7 @@ func (c *Chunk) Update(w *World) (removed []*chunkEntity) {
 	c.RemoveNil()
 	return
 }
+//Resmoves all entities that are nil
 func (c *Chunk) RemoveNil() error {
 	for fcID, l := range(c.entities) {
 		for i := len(l)-1; i >= 0; i -- {
@@ -99,10 +97,12 @@ func (c *Chunk) RemoveNil() error {
 	}
 	return nil
 }
+//Removes a entity with speciefied index
 func (c *Chunk) Remove(fcID, i int) {
 	c.entities[fcID][i] = c.entities[fcID][len(c.entities[fcID])-1]
 	c.entities[fcID] = c.entities[fcID][:len(c.entities[fcID])-1]
 }
+//returns changes as []byte
 func (c *Chunk) GetDelta() (bs []byte) {
 	//[1]byte
 	bs = []byte{byte(len(c.removed))}
@@ -122,6 +122,7 @@ func (c *Chunk) GetDelta() (bs []byte) {
 	c.changed = false
 	return
 }
+//sets changes
 func (c *Chunk) SetDelta(bs []byte) (removed []*chunkEntity) {
 	removed = make([]*chunkEntity, 0)
 	rems := int(bs[0]); bs = bs[1:]
@@ -144,6 +145,7 @@ func (c *Chunk) SetDelta(bs []byte) (removed []*chunkEntity) {
 	}
 	return
 }
+//Writes the chunk to the disk
 func (c *Chunk) ToDisk() error {
 	bs := make([]byte, 0)
 	for fcID,l := range(c.entities) {
@@ -154,6 +156,7 @@ func (c *Chunk) ToDisk() error {
 	}
 	return ioutil.WriteFile(c.tmpPath, bs, 0644)
 }
+//Loads the chunk from the disk
 func (c *Chunk) ToRAM() error {
 	data, err := ioutil.ReadFile(c.tmpPath)
 	if err != nil {return err}
@@ -169,6 +172,7 @@ func (c *Chunk) ToRAM() error {
 	}
 	return nil
 }
+//Returns the relative position of a entity in a chunk
 func (c *Chunk) RelPosOfEntity(e EntityI) (byte, byte, error) {
 	eX, eY := e.IntPos()
 	relX, relY := eX-int64(c.tileLT[0]), eY-int64(c.tileLT[1])
@@ -177,12 +181,14 @@ func (c *Chunk) RelPosOfEntity(e EntityI) (byte, byte, error) {
 	}
 	return byte(relX), byte(relY), nil
 }
+//converts 2d coords in a chunk to a index
 func ChunkCoord2DtoIdx(x, y int) byte {
 	if x >= CHUNK_SIZE || y >= CHUNK_SIZE {
 		panic("NEVER call ChunkCoord2DtoIdx with coords >= 16")
 	}
 	return byte(x+CHUNK_SIZE*y)
 }
+//converts a index in a chunk to 2d coords
 func IdxtoChunkCoord2D(idx byte) (x,y int) {
 	csm1 := byte(CHUNK_SIZE -1)
 	x = int(idx%CHUNK_SIZE)

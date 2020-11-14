@@ -67,6 +67,7 @@ func ChunkStringToDeltaFromMiddle(cs string) (d [][2]int) {
 	}
 	return
 }
+//Returns the chunk that the tile coords are in
 func GetChunkOfTile(x,y int) (xC, yC int) {
 	xWithoutDx := float64(x-x%int(CHUNK_SIZE)); yWithoutDy := float64(y-y%int(CHUNK_SIZE))
 	tilesDX := xWithoutDx/CHUNK_SIZE; tilesDY := yWithoutDy/CHUNK_SIZE

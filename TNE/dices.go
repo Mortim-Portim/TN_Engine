@@ -6,7 +6,7 @@ import (
 	//"time"
 )
 
-//Rolls n dices of m sides and returns the result
+//Rolls n dices of m sides and returns the sum of the results
 func RollDice(dices, sides int) int {
 	res := 0
 	for i := 0; i < dices; i++ {

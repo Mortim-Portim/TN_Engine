@@ -7,6 +7,7 @@ import (
 )
 const INDEX_FILE_NAME = "#index.txt"
 
+//returns a creature factory that loads all creatures from a specific path, prepare specifies the number of creatures to be prepared
 func GetCreatureFactory(path string, frameCounter *int, prepare int) (*CreatureFactory, error) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
@@ -38,6 +39,7 @@ func (cf *CreatureFactory) Print() (out string) {
 		cf.rootPath, cf.crNames, len(cf.creatures), cf.prepare, *cf.frameCounter)
 	return
 }
+//Loads the creatures
 func (cf *CreatureFactory) Load() error {
 	cf.creatures = make([]*Creature, len(cf.crNames))
 	for i,name := range(cf.crNames) {
@@ -101,7 +103,7 @@ func (cf *CreatureFactory) Get(idx int) (cr *Creature) {
 	}
 	return
 }
-
+//Returns a slice containing the names of all creatures
 func (cf *CreatureFactory) CreatureNames() []string {
 	return cf.crNames
 }
