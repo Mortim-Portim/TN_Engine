@@ -3,14 +3,16 @@ package main
 import (
 	"marvin/TN_Engine/TNE"
 	"marvin/GraphEng/GE"
-	"runtime"
+	//"runtime"
 	"github.com/hajimehoshi/ebiten"
 	"fmt"
+	"os"
 	"time"
+	"runtime/pprof"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
-const (
+var (
 	screenWidth  = 1600
 	screenHeight = 900
 	FPS = 30
@@ -18,15 +20,13 @@ const (
 func StartGame(g ebiten.Game) {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("TN_Engine Test")
-	//ebiten.SetFullscreen(true)
+	ebiten.SetFullscreen(true)
 	ebiten.SetVsyncEnabled(true)
 	ebiten.SetRunnableOnUnfocused(true)
 	ebiten.SetMaxTPS(FPS)
-	//ebiten.SetCursorMode(ebiten.CursorModeCaptured)
-	if err := ebiten.RunGame(g); err != nil {
-		panic(err)
-	}
-	GE.CloseLogFile()
+	err := ebiten.RunGame(g)
+	defer GE.CloseLogFile()
+	GE.ShitImDying(err)
 }
 
 
@@ -85,33 +85,23 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 	}
 	g.rec.NextFrame(screen)
 	
+	if ebiten.IsKeyPressed(ebiten.KeyK) {
+		pprof.StopCPUProfile()
+	}
+	
 	g.frame ++
 	timeTaken = time.Now().Sub(startTime).Milliseconds()
-	fps := ebiten.CurrentTPS()
-	msg := fmt.Sprintf(`TPS: %0.2f, Updating took: %v at frame %v`, fps, timeTaken, g.frame-1)
+	msg := TNE.PrintPerformance(int(g.frame-1), int(timeTaken))
 	ebitenutil.DebugPrint(screen, msg)
 	GE.LogToFile(msg+"\n")
-	//fmt.Println(msg)
-	//fmt.Println(PrintMemUsage())
+	fmt.Println(msg)
 	return nil
 }
 func (g *TestGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return screenWidth, screenHeight
 }
-func PrintMemUsage() (out string) {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
-	out = fmt.Sprintf("Alloc = %v MiB", bToMb(m.Alloc))
-	out += fmt.Sprintf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
-	out += fmt.Sprintf("\tSys = %v MiB", bToMb(m.Sys))
-	out += fmt.Sprintf("\tNumGC = %v\n", m.NumGC)
-	return 
-}
-func bToMb(b uint64) uint64 {
-    return b / 1024 / 1024
-}
 func main() {
+	screenWidth,screenHeight = ebiten.ScreenSizeInFullscreen()
 	GE.Init("")
 	GE.SetLogFile("./res/log.txt")
 	time.Sleep(time.Second*2)
@@ -121,7 +111,7 @@ func main() {
 	fmt.Println("Rolling Dice took: ", time.Now().Sub(diceStart))
 	fmt.Println(result)
 	
-	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 960, 540, FPS), 0}
+	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 360, 202, FPS), 0}
 	
 	cf, err := TNE.GetCreatureFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
@@ -140,13 +130,18 @@ func main() {
 	})
 	game.character = &TNE.Player{TNE.Race{c.Entity}}
 	
-	game.world = TNE.GetWorld(0,0,screenWidth,screenHeight, 16, 9, 4,6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
+	game.world = TNE.GetWorld(0,0,float64(screenWidth),float64(screenHeight), 16, 9, 4,6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
 	game.world.AddPlayer(game.character)
 	err = game.world.SetActivePlayer(0)
 	GE.ShitImDying(err)
 	//game.world.Structure.SetMiddleSmooth(0, 0)
 	
 	fmt.Println(game.world.Print())
+	
+	f, err := os.Create("./res/cpu_profile.txt")
+	GE.ShitImDying(err)
+	err = pprof.StartCPUProfile(f)
+	GE.ShitImDying(err)
 	
 	game.Init(nil)
 	StartGame(game)
