@@ -138,7 +138,8 @@ func main() {
 	
 	chicken := cf.Get(0)
 	fmt.Println("Chicken: ",chicken.Print())
-	game.world.AddEntity(0,0,chicken)
+	err = game.world.AddEntity(0,0,chicken)
+	GE.ShitImDying(err)
 	
 	fmt.Println(game.world.Print())
 	

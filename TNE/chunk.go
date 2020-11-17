@@ -6,6 +6,7 @@ import (
 	cmp "marvin/GraphEng/Compression"
 	"io/ioutil"
 	"errors"
+	"fmt"
 )
 const CHUNK_SIZE = 16
 
@@ -37,7 +38,9 @@ type Chunk struct {
 func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 	for _,l := range(c.entities) {
 		for _,ent := range(l) {
-			dws.Add(ent.Entity)
+			if ent != nil {
+				dws.Add(ent.Entity)
+			}
 		}
 	}
 }
@@ -82,7 +85,11 @@ func (c *Chunk) Update(w *World) (removed []*chunkEntity) {
 			}
 		}
 	}
-	c.RemoveNil()
+	if len(removed) > 0 {
+		fmt.Println("Removing nils: ", c.entities)
+		c.RemoveNil()
+		fmt.Println("ALL not nil: ", c.entities)
+	}
 	return
 }
 //Resmoves all entities that are nil
@@ -92,6 +99,7 @@ func (c *Chunk) RemoveNil() error {
 			if l[i] == nil {
 				c.Remove(fcID, i)
 				c.removed = append(c.removed, [2]int{fcID, i})
+				c.changed = true
 			}
 		}
 	}

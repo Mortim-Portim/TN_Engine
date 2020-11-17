@@ -120,6 +120,7 @@ func (w *World) UpdateDrawables() {
 				w.Structure.AddDrawable(w.Players[w.ActivePlayer])
 				w.AddEntitiesToDrawables(w.Structure.Add_Drawables, cX, cY)
 				w.ActivePlayerChunk = int(idx)
+				fmt.Println("w.Structure.Add_Drawables: ", w.Structure.Add_Drawables)
 			}
 		}
 	}
