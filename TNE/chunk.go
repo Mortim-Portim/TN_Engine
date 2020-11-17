@@ -14,11 +14,11 @@ var ERR_ENTITY_NOT_IN_THIS_CHUNK = errors.New("Entity not in this chunk")
 var ERR_ENTITY_DOES_NOT_EXIST = errors.New("Entity does not exist")
 
 //tmpPath is a path to a temporary file used for saving the chunk
-func GetChunk(x,y int, cf *CreatureFactory, tmpPath string) (c *Chunk) {
+func GetChunk(x,y int, cf *EntityFactory, tmpPath string) (c *Chunk) {
 	c = &Chunk{pos:[2]int16{int16(x),int16(y)}, cf:cf, tmpPath:tmpPath}
 	c.tileLT = [2]int16{CHUNK_SIZE*c.pos[0], CHUNK_SIZE*c.pos[1]}
 	c.tileRB = [2]int16{c.tileLT[0]+CHUNK_SIZE, c.tileLT[1]+CHUNK_SIZE}
-	c.entities = make([][]*chunkEntity, len(cf.CreatureNames()))
+	c.entities = make([][]*chunkEntity, len(cf.EntityNames()))
 	c.changes = make([][2]int, 0)
 	c.removed = make([][2]int, 0)
 	return
@@ -28,7 +28,7 @@ type Chunk struct {
 	entities [][]*chunkEntity
 	changes [][2]int
 	removed [][2]int
-	cf *CreatureFactory
+	cf *EntityFactory
 	tmpPath string
 	changed bool
 	LastUpdateFrame, LastDrawFrame int
@@ -37,12 +37,12 @@ type Chunk struct {
 func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 	for _,l := range(c.entities) {
 		for _,ent := range(l) {
-			dws.Add(ent)
+			dws.Add(ent.Entity)
 		}
 	}
 }
 //Adds an Entity to the chunk
-func (c *Chunk) AddEntity(e EntityI) error {
+func (c *Chunk) AddEntity(e *Entity) error {
 	id := int(e.FactoryCreationID())
 	rx,ry,err := c.RelPosOfEntity(e)
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *Chunk) ToRAM() error {
 		data = data[2:]
 		for range(l) {
 			idx := int(data[3])
-			c.entities[fcID][idx].EntityI = c.cf.Get(fcID)
+			c.entities[fcID][idx].Entity = c.cf.Get(fcID)
 			c.entities[fcID][idx].FromBytes(data[:3])
 			data = data[4:]
 		}
@@ -173,7 +173,7 @@ func (c *Chunk) ToRAM() error {
 	return nil
 }
 //Returns the relative position of a entity in a chunk
-func (c *Chunk) RelPosOfEntity(e EntityI) (byte, byte, error) {
+func (c *Chunk) RelPosOfEntity(e *Entity) (byte, byte, error) {
 	eX, eY := e.IntPos()
 	relX, relY := eX-int64(c.tileLT[0]), eY-int64(c.tileLT[1])
 	if relX < 0 || relY < 0 || relX >= CHUNK_SIZE || relY >= CHUNK_SIZE {
@@ -195,17 +195,17 @@ func IdxtoChunkCoord2D(idx byte) (x,y int) {
 	y = int((idx-(idx%csm1))/csm1)
 	return
 }
-func getNewChunkEntityFromBytes(bs []byte, cf *CreatureFactory, fcID int) (e *chunkEntity) {
+func getNewChunkEntityFromBytes(bs []byte, cf *EntityFactory, fcID int) (e *chunkEntity) {
 	ent := cf.Get(fcID)
 	e = &chunkEntity{ent, [2]byte{}, 0, nil}
 	e.FromBytes(bs)
 	return e
 }
-func getNewChunkEntity(e EntityI, rx, ry byte) *chunkEntity {
+func getNewChunkEntity(e *Entity, rx, ry byte) *chunkEntity {
 	return &chunkEntity{e, [2]byte{rx,ry}, ChunkCoord2DtoIdx(int(rx), int(ry)), nil}
 }
 type chunkEntity struct {
-	EntityI
+	*Entity
 	chunkPos [2]byte
 	chunkPosIdx byte
 	//[3]byte
@@ -215,22 +215,22 @@ func (ce *chunkEntity) SaveChanges() {
 	ce.changes = ce.ToBytes()
 }
 func (ce *chunkEntity) FromBytes(bs []byte) {
-	ce.EntityI.SetData(bs[0:1])
+	ce.Entity.SetData(bs[0:1])
 	ce.chunkPosIdx = bs[2]
 	x,y := IdxtoChunkCoord2D(bs[2])
 	ce.chunkPos = [2]byte{byte(x),byte(y)}
-	ce.EntityI.SetTopLeftTo(float64(x), float64(y))
+	ce.Entity.SetTopLeftTo(float64(x), float64(y))
 }
 func (ce *chunkEntity) ToBytes() (bs []byte) {
-	defer func(){ce.EntityI = nil}()
+	defer func(){ce.Entity = nil}()
 	bs = make([]byte, 3)
-	copy(bs[0:1], ce.EntityI.GetData())
+	copy(bs[0:1], ce.Entity.GetData())
 	bs[2] = ce.chunkPosIdx
 	return
 }
 func (ce *chunkEntity) Update(c *Chunk, w *World) error {
-	ce.EntityI.Update(w)
-	rx,ry,err := c.RelPosOfEntity(ce.EntityI)
+	ce.Entity.Update(w)
+	rx,ry,err := c.RelPosOfEntity(ce.Entity)
 	if err != nil {return err}
 	ce.chunkPos[0] = rx
 	ce.chunkPos[1] = ry

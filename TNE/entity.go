@@ -21,6 +21,7 @@ const (
 )
 const CREATURE_WOBJ = "#WOBJ"
 
+/**
 type EntityI interface {
 	GE.Drawable
 	IntPos() (int64, int64)
@@ -31,6 +32,8 @@ type EntityI interface {
 	Changed() bool
 	SetTopLeftTo(x,y float64)
 }
+**/
+type EntityUpdater func(e *Entity/**EntityI**/, world *World)
 
 /**
 Syncronized:
@@ -56,7 +59,7 @@ type Entity struct {
 	factoryCreationId int16
 	
 	frame *int
-	Updater func(e EntityI, world *World)
+	Updater EntityUpdater
 }
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
@@ -90,7 +93,9 @@ func (e *Entity) UpdateAll(w *World) {
 		}
 		e.UpdateOrientationAnim()
 	}
-	e.Updater(e, w)
+	if e.Updater != nil {
+		e.Updater(e, w)
+	}
 }
 //Returns the Bounds of the Entity
 func (e *Entity) Bounds() (float64, float64) {
@@ -205,7 +210,7 @@ func (e *Entity) KeepsMoving() bool {
 func (e *Entity) IntPos() (int64, int64) {
 	return e.xPos, e.yPos
 }
-func (e *Entity) RegiserUpdateFunc(u func(e EntityI, w *World)) {
+func (e *Entity) RegiserUpdateFunc(u EntityUpdater) {
 	e.Updater = u
 }
 
@@ -252,6 +257,6 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 }
 
 func (e *Entity) Print() (out string) {
-	out = fmt.Sprintf("Entity: FcID: %v, X: %v, Y: %v, CurrO: %v, NextO: %v, moves: %v, keepsMoving: %v, isDirty: %v", e.factoryCreationId, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, e.changed)
+	out = fmt.Sprintf("Entity: FcID: %v, X: %v, Y: %v, CurrO: %v, NextO: %v, moves: %v, keepsMoving: %v, isDirty: %v, WObj: %v", e.factoryCreationId, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, e.changed, e.GetWObj())
 	return
 }
