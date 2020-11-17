@@ -90,7 +90,9 @@ func (e *Entity) UpdateAll(w *World) {
 		}
 		e.UpdateOrientationAnim()
 	}
-	e.Updater(e, w)
+	if e.Updater != nil {
+		e.Updater(e, w)
+	}
 }
 //Returns the Bounds of the Entity
 func (e *Entity) Bounds() (float64, float64) {
@@ -252,6 +254,6 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 }
 
 func (e *Entity) Print() (out string) {
-	out = fmt.Sprintf("Entity: FcID: %v, X: %v, Y: %v, CurrO: %v, NextO: %v, moves: %v, keepsMoving: %v, isDirty: %v", e.factoryCreationId, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, e.changed)
+	out = fmt.Sprintf("Entity: FcID: %v, X: %v, Y: %v, CurrO: %v, NextO: %v, moves: %v, keepsMoving: %v, isDirty: %v, WObj: %v", e.factoryCreationId, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, e.changed, e.GetWObj())
 	return
 }

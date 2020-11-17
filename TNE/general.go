@@ -18,5 +18,5 @@ func PrintPerformance(frame, timeTaken int) (out string) {
 	return 
 }
 func bToMb(b uint64) uint64 {
-    return b / 1024 / 1024 / 8
+    return b / 1024 / 1024
 }

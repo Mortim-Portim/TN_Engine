@@ -6,9 +6,7 @@ import (
 	//"runtime"
 	"github.com/hajimehoshi/ebiten"
 	"fmt"
-	"os"
 	"time"
-	"runtime/pprof"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
@@ -71,23 +69,21 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 		moving = true
 	}
 	g.character.KeepMoving(moving)
-	//g.character.UpdateAll(nil)
-	//g.character.Draw(screen, 255, 0, 0, 0, 0, 100)
-	//fmt.Println(g.character.Print())
 	
+	//Update chunks
+	g.world.UpdatePlayerChunks(g.world.Players)
+	
+	//Update world
 	g.world.UpdateActivePlayer()
 	g.world.UpdateDrawables()
 	g.world.UpdateWorldStructure()
 	g.world.Draw(screen)
 	
+	//Save video
 	if ebiten.IsKeyPressed(ebiten.KeyC) && !g.rec.IsSaving() {
 		g.rec.Save("./res/out")
 	}
 	g.rec.NextFrame(screen)
-	
-	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		pprof.StopCPUProfile()
-	}
 	
 	g.frame ++
 	timeTaken = time.Now().Sub(startTime).Milliseconds()
@@ -113,8 +109,19 @@ func main() {
 	
 	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 360, 202, FPS), 0}
 	
-	cf, err := TNE.GetCreatureFactory("./res/creatures/", &game.frame, 3)
+	cf, err := TNE.GetEntityFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
+	
+	uFncs := make(map[string]func(e TNE.EntityI, world *TNE.World))
+	uFncs["test"] = func(e TNE.EntityI, world *TNE.World){
+		ent := e.(*TNE.Entity)
+		if (*world.FrameCounter)%30 == 0 {
+			ent.Move(1, 30)
+		}
+	}
+	//uFncs["test_2"] = uFncs["test"]
+	
+	cf.SetUpdateFunction(uFncs)
 	
 	prepStart := time.Now()
 	cf.Prepare()
@@ -122,26 +129,19 @@ func main() {
 	
 	getStart := time.Now()
 	c := cf.Get(1)
-	//GE.ShitImDying(err)
 	fmt.Println("Getting took: ", time.Now().Sub(getStart))
-	
-	c.RegiserUpdateFunc(func(e TNE.EntityI, world *TNE.World) {
-		//fmt.Println("Updating creature, frame: ", frame)
-	})
-	game.character = &TNE.Player{TNE.Race{c.Entity}}
+	game.character = &TNE.Player{TNE.Race{*c}}
 	
 	game.world = TNE.GetWorld(0,0,float64(screenWidth),float64(screenHeight), 16, 9, 4,6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
 	game.world.AddPlayer(game.character)
 	err = game.world.SetActivePlayer(0)
 	GE.ShitImDying(err)
-	//game.world.Structure.SetMiddleSmooth(0, 0)
+	
+	chicken := cf.Get(0)
+	fmt.Println("Chicken: ",chicken.Print())
+	game.world.AddEntity(0,0,chicken)
 	
 	fmt.Println(game.world.Print())
-	
-	f, err := os.Create("./res/cpu_profile.txt")
-	GE.ShitImDying(err)
-	err = pprof.StartCPUProfile(f)
-	GE.ShitImDying(err)
 	
 	game.Init(nil)
 	StartGame(game)

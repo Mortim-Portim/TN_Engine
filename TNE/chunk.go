@@ -14,11 +14,11 @@ var ERR_ENTITY_NOT_IN_THIS_CHUNK = errors.New("Entity not in this chunk")
 var ERR_ENTITY_DOES_NOT_EXIST = errors.New("Entity does not exist")
 
 //tmpPath is a path to a temporary file used for saving the chunk
-func GetChunk(x,y int, cf *CreatureFactory, tmpPath string) (c *Chunk) {
+func GetChunk(x,y int, cf *EntityFactory, tmpPath string) (c *Chunk) {
 	c = &Chunk{pos:[2]int16{int16(x),int16(y)}, cf:cf, tmpPath:tmpPath}
 	c.tileLT = [2]int16{CHUNK_SIZE*c.pos[0], CHUNK_SIZE*c.pos[1]}
 	c.tileRB = [2]int16{c.tileLT[0]+CHUNK_SIZE, c.tileLT[1]+CHUNK_SIZE}
-	c.entities = make([][]*chunkEntity, len(cf.CreatureNames()))
+	c.entities = make([][]*chunkEntity, len(cf.EntityNames()))
 	c.changes = make([][2]int, 0)
 	c.removed = make([][2]int, 0)
 	return
@@ -28,7 +28,7 @@ type Chunk struct {
 	entities [][]*chunkEntity
 	changes [][2]int
 	removed [][2]int
-	cf *CreatureFactory
+	cf *EntityFactory
 	tmpPath string
 	changed bool
 	LastUpdateFrame, LastDrawFrame int
@@ -195,7 +195,7 @@ func IdxtoChunkCoord2D(idx byte) (x,y int) {
 	y = int((idx-(idx%csm1))/csm1)
 	return
 }
-func getNewChunkEntityFromBytes(bs []byte, cf *CreatureFactory, fcID int) (e *chunkEntity) {
+func getNewChunkEntityFromBytes(bs []byte, cf *EntityFactory, fcID int) (e *chunkEntity) {
 	ent := cf.Get(fcID)
 	e = &chunkEntity{ent, [2]byte{}, 0, nil}
 	e.FromBytes(bs)

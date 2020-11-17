@@ -14,7 +14,7 @@ Test entity movement
 syncronize players, entitys, lightlevel
 **/
 //path = "./res/wrld"
-func GetWorld(X,Y,W,H float64, tW, tH, cW,cH int, CF *CreatureFactory, frameCounter *int, path, wrld_name, tile_F, struct_F string) (w *World) {
+func GetWorld(X,Y,W,H float64, tW, tH, cW,cH int, CF *EntityFactory, frameCounter *int, path, wrld_name, tile_F, struct_F string) (w *World) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
@@ -55,6 +55,8 @@ type World struct {
 	ChunkMat *GE.Matrix
 	//Stores all chunks
 	Chunks []*Chunk
+	//Stores a referenc to the range for updating chunks around players
+	ChunkUpdateRange int
 	
 	//Stores all Players
 	Players []*Player
@@ -63,7 +65,7 @@ type World struct {
 	//If the current player changes position or is replaced
 	ActivePlayerChange bool
 	
-	CF *CreatureFactory
+	CF *EntityFactory
 	
 	Path string
 	FrameCounter *int
@@ -178,6 +180,21 @@ func (w *World) AddEntitiesToDrawables(dws *GE.Drawables, x, y int) {
 	}
 }
 /**
+Updates all chunks around all players with the specified delta of the world
+calls UpdateChunks and ReAssignEntities
+CALL on !!Server!! on !!every frame!!
+**/
+func (w *World) UpdatePlayerChunks(Players []*Player) {
+	pos := make([][2]int, len(Players))
+	for i,player := range(Players) {
+		x,y := player.IntPos()
+		cX,cY := GetChunkOfTile(int(x),int(y))
+		pos[i] = [2]int{cX,cY}
+	}
+	changedEntities := w.UpdateChunks(w.ChunkUpdateRange, pos...)
+	w.ReAssignEntities(changedEntities)
+}
+/**
 Reassigns all entities in ents to the chunk that they fit in
 This should only be called when the entities move to a different chunk
 CALL on !!Server!! on !!every frame!! for objs returned by !!UpdateChunks!!
@@ -193,16 +210,16 @@ func (w *World) ReAssignEntities(ents []*chunkEntity) {
 	}
 }
 /**
-Updates all chunks in a pattern given by CHUNK_DELTAS[plXYChunkR[2]] that lie around plXYChunkR[0], plXYChunkR[1]
+Updates all chunks in a pattern given by CHUNK_DELTAS[chunkRange] that lie around plXYChunkR[0], plXYChunkR[1]
 CALL on !!Server!! on !!every frame!!
 **/
-func (w *World) UpdateChunks(plXYChunkR ...[3]int) (allRems []*chunkEntity) {
+func (w *World) UpdateChunks(chunkRange int, plXYChunkR ...[2]int) (allRems []*chunkEntity) {
 	allRems = make([]*chunkEntity, 0)
 	done := make(chan bool)
 	for _,posTs := range(plXYChunkR) {
 		go func() {
 			x,y := GetChunkOfTile(posTs[0], posTs[1])
-			for _,delta := range(CHUNK_DELTAS[posTs[2]]) {
+			for _,delta := range(CHUNK_DELTAS[chunkRange]) {
 				idx, err := w.ChunkMat.Get(x+delta[0], y+delta[1])
 				if err == nil {
 					if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
@@ -218,4 +235,13 @@ func (w *World) UpdateChunks(plXYChunkR ...[3]int) (allRems []*chunkEntity) {
 		<- done
 	}
 	return
+}
+/**
+Adds a entity to a chunk given by the coords cX, cY
+CALL on !!Server!!
+**/
+func (w *World) AddEntity(cX, cY int, e EntityI) error {
+	idx, err := w.ChunkMat.Get(cX,cY)
+	if err != nil {return err}
+	return w.Chunks[idx].AddEntity(e)
 }
