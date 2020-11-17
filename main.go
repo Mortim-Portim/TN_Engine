@@ -112,9 +112,8 @@ func main() {
 	cf, err := TNE.GetEntityFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
 	
-	uFncs := make(map[string]func(e TNE.EntityI, world *TNE.World))
-	uFncs["test"] = func(e TNE.EntityI, world *TNE.World){
-		ent := e.(*TNE.Entity)
+	uFncs := make(map[string]func(e *TNE.Entity, world *TNE.World))
+	uFncs["test"] = func(ent *TNE.Entity, world *TNE.World){
 		if (*world.FrameCounter)%30 == 0 {
 			ent.Move(1, 30)
 		}

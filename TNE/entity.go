@@ -21,6 +21,7 @@ const (
 )
 const CREATURE_WOBJ = "#WOBJ"
 
+/**
 type EntityI interface {
 	GE.Drawable
 	IntPos() (int64, int64)
@@ -31,6 +32,8 @@ type EntityI interface {
 	Changed() bool
 	SetTopLeftTo(x,y float64)
 }
+**/
+type EntityUpdater func(e *Entity/**EntityI**/, world *World)
 
 /**
 Syncronized:
@@ -56,7 +59,7 @@ type Entity struct {
 	factoryCreationId int16
 	
 	frame *int
-	Updater func(e EntityI, world *World)
+	Updater EntityUpdater
 }
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
@@ -207,7 +210,7 @@ func (e *Entity) KeepsMoving() bool {
 func (e *Entity) IntPos() (int64, int64) {
 	return e.xPos, e.yPos
 }
-func (e *Entity) RegiserUpdateFunc(u func(e EntityI, w *World)) {
+func (e *Entity) RegiserUpdateFunc(u EntityUpdater) {
 	e.Updater = u
 }
 

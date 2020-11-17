@@ -205,7 +205,7 @@ func (w *World) ReAssignEntities(ents []*chunkEntity) {
 		cX,cY := GetChunkOfTile(int(x),int(y))
 		idx,err := w.ChunkMat.Get(cX,cY)
 		if err == nil {
-			w.Chunks[idx].AddEntity(ent.EntityI)
+			w.Chunks[idx].AddEntity(ent.Entity)
 		}
 	}
 }
@@ -240,7 +240,7 @@ func (w *World) UpdateChunks(chunkRange int, plXYChunkR ...[2]int) (allRems []*c
 Adds a entity to a chunk given by the coords cX, cY
 CALL on !!Server!!
 **/
-func (w *World) AddEntity(cX, cY int, e EntityI) error {
+func (w *World) AddEntity(cX, cY int, e *Entity) error {
 	idx, err := w.ChunkMat.Get(cX,cY)
 	if err != nil {return err}
 	return w.Chunks[idx].AddEntity(e)
