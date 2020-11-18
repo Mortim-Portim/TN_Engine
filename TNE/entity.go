@@ -1,19 +1,21 @@
 package TNE
 
 import (
-	"marvin/GraphEng/GE"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/mortim-portim/GraphEng/GE"
+
 	//cmp "marvin/GraphEng/Compression"
-	"strings"
-	"math"
 	"fmt"
+	"math"
+	"strings"
 )
+
 const (
-	CREATURE_ANIM_STANDARD = "idle_L"
-	CREATURE_ANIM_IDLE_L = 0
-	CREATURE_ANIM_IDLE_R = 1
-	CREATURE_ANIM_IDLE_U = 2
-	CREATURE_ANIM_IDLE_D = 3
+	CREATURE_ANIM_STANDARD  = "idle_L"
+	CREATURE_ANIM_IDLE_L    = 0
+	CREATURE_ANIM_IDLE_R    = 1
+	CREATURE_ANIM_IDLE_U    = 2
+	CREATURE_ANIM_IDLE_D    = 3
 	CREATURE_ANIM_RUNNING_L = 4
 	CREATURE_ANIM_RUNNING_R = 5
 	CREATURE_ANIM_RUNNING_U = 6
@@ -33,7 +35,7 @@ type EntityI interface {
 	SetTopLeftTo(x,y float64)
 }
 **/
-type EntityUpdater func(e *Entity/**EntityI**/, world *World)
+type EntityUpdater func(e *Entity /**EntityI**/, world *World)
 
 /**
 Syncronized:
@@ -43,36 +45,38 @@ currentAnim
 **/
 type Entity struct {
 	GE.WObj
-	
-	anims []*GE.DayNightAnim
+
+	anims       []*GE.DayNightAnim
 	currentAnim uint8
-	
-	xPos, yPos int64
+
+	xPos, yPos                  int64
 	orientation, neworientation uint8
-	isMoving, keepMoving bool
-	
+	isMoving, keepMoving        bool
+
 	movingFrames, movedFrames int
-	movingStepSize float64
-	
+	movingStepSize            float64
+
 	changed bool
-	
+
 	factoryCreationId int16
-	
-	frame *int
+
+	frame   *int
 	Updater EntityUpdater
 }
+
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
 	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving,
 		e.keepMoving, e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
-	for i,anim := range(e.anims) {
+	for i, anim := range e.anims {
 		if anim != nil {
 			e2.anims[i] = anim.Copy()
 		}
 	}
 	return
 }
+
 //Updates the movement and calls the provided Update func afterwards
 func (e *Entity) UpdateAll(w *World) {
 	if e.isMoving {
@@ -83,13 +87,13 @@ func (e *Entity) UpdateAll(w *World) {
 				e.isMoving = true
 				e.movedFrames = 0
 				e.moveInDirection(e.orientation)
-				e.movedFrames ++
-			}else{
+				e.movedFrames++
+			} else {
 				e.changed = true
 			}
-		}else{
+		} else {
 			e.moveInDirection(e.orientation)
-			e.movedFrames ++
+			e.movedFrames++
 		}
 		e.UpdateOrientationAnim()
 	}
@@ -97,10 +101,12 @@ func (e *Entity) UpdateAll(w *World) {
 		e.Updater(e, w)
 	}
 }
+
 //Returns the Bounds of the Entity
 func (e *Entity) Bounds() (float64, float64) {
 	return e.WObj.Bounds()
 }
+
 //Initiates a move action with a specific lenght an duration
 func (e *Entity) Move(length, frames int) {
 	if e.isMoving {
@@ -109,37 +115,41 @@ func (e *Entity) Move(length, frames int) {
 	e.isMoving = true
 	e.movingFrames = frames
 	e.movedFrames = 0
-	e.movingStepSize = float64(length)/float64(frames)
+	e.movingStepSize = float64(length) / float64(frames)
 	e.neworientation = e.orientation
 }
+
 //Sets the middle of the Entity
 func (e *Entity) SetMiddleTo(x, y float64) {
-	e.WObj.SetPos(x,y)
+	e.WObj.SetPos(x, y)
 	e.setIntPos()
 }
+
 //Sets the top left corner of the Entity
 func (e *Entity) SetTopLeftTo(x, y float64) {
-	e.WObj.SetToXY(x,y)
+	e.WObj.SetToXY(x, y)
 	e.setIntPos()
 }
 func (e *Entity) setIntPos() {
-	xf,yf,_ := e.WObj.GetPos()
-	x,y := int64(math.Round(xf-0.5)), int64(math.Round(yf-0.5))
+	xf, yf, _ := e.WObj.GetPos()
+	x, y := int64(math.Round(xf-0.5)), int64(math.Round(yf-0.5))
 	if x != e.xPos || y != e.yPos {
-		e.xPos, e.yPos = x,y
+		e.xPos, e.yPos = x, y
 		e.changed = true
 	}
 }
+
 //Changes the orientation
 func (e *Entity) ChangeOrientation(newO uint8) {
 	if newO != e.orientation {
 		if e.isMoving {
 			e.neworientation = newO
-		}else{
+		} else {
 			e.orientation = newO
 		}
 	}
 }
+
 //Updates the Orientation animation, ONLY call this if really necassary
 func (e *Entity) UpdateOrientationAnim() {
 	idx := e.orientation
@@ -149,28 +159,30 @@ func (e *Entity) UpdateOrientationAnim() {
 	e.SetAnim(int(idx))
 }
 func (e *Entity) moveInDirection(dir uint8) {
-	dx, dy := 0.0,0.0
+	dx, dy := 0.0, 0.0
 	switch dir {
-		case 0:
-			dx = -e.movingStepSize
-			break
-		case 1:
-			dx = e.movingStepSize
-			break
-		case 2:
-			dy = -e.movingStepSize
-			break
-		case 3:
-			dy = e.movingStepSize
-			break
+	case 0:
+		dx = -e.movingStepSize
+		break
+	case 1:
+		dx = e.movingStepSize
+		break
+	case 2:
+		dy = -e.movingStepSize
+		break
+	case 3:
+		dy = e.movingStepSize
+		break
 	}
 	e.WObj.MoveBy(dx, dy)
 	e.setIntPos()
 }
+
 //Implements EntityI
 func (e *Entity) GetDrawBox() *GE.Rectangle {
 	return e.WObj.GetDrawBox()
 }
+
 //Implements EntityI
 func (e *Entity) GetPos() (float64, float64, int8) {
 	return e.WObj.GetPos()
@@ -222,18 +234,21 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
-	pathS := strings.Split(path, "/"); name := pathS[len(pathS)-2]
-	e := &Entity{frame:frameCounter, anims:make([]*GE.DayNightAnim, 0), changed:true}
-	wobj, err := GE.GetWObjFromPath(name, path+CREATURE_ANIM_STANDARD , path+CREATURE_WOBJ)
-	if err != nil {return e, err}
+	pathS := strings.Split(path, "/")
+	name := pathS[len(pathS)-2]
+	e := &Entity{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), changed: true}
+	wobj, err := GE.GetWObjFromPath(name, path+CREATURE_ANIM_STANDARD, path+CREATURE_WOBJ)
+	if err != nil {
+		return e, err
+	}
 	e.WObj = *wobj
-	
+
 	idx := &GE.List{}
-	idx.LoadFromFile(path+INDEX_FILE_NAME)
+	idx.LoadFromFile(path + INDEX_FILE_NAME)
 	names := idx.GetSlice()
 	e.anims = make([]*GE.DayNightAnim, 0)
-	for _,anim_n := range(names) {
-		anim, _ := GE.GetDayNightAnimFromParams(1,1,1,1, path+anim_n+".txt", path+anim_n+".png")
+	for _, anim_n := range names {
+		anim, _ := GE.GetDayNightAnimFromParams(1, 1, 1, 1, path+anim_n+".txt", path+anim_n+".png")
 		e.anims = append(e.anims, anim)
 	}
 	e.setIntPos()
@@ -250,6 +265,7 @@ func (e *Entity) SetAnim(idx int) {
 func (e *Entity) GetAnim() uint8 {
 	return e.currentAnim
 }
+
 //Implements EntityI
 func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
 	e.WObj.Update(*e.frame)
