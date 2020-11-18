@@ -5,4 +5,4 @@ hitBoxWidth:    1
 hitBoxHeight:   1
 XPos:           0
 YPos:           0
-layer:          0
+layer:          1

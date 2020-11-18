@@ -4,8 +4,6 @@ import (
 	"github.com/mortim-portim/GraphEng/GE"
 	//"github.com/hajimehoshi/ebiten"
 	"errors"
-	"fmt"
-	"io/ioutil"
 
 	cmp "github.com/mortim-portim/GraphEng/Compression"
 )
@@ -36,17 +34,6 @@ type Chunk struct {
 	tmpPath                        string
 	changed                        bool
 	LastUpdateFrame, LastDrawFrame int
-}
-
-//Adds all entities of the chunk to drawables
-func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
-	for _, l := range c.entities {
-		for _, ent := range l {
-			if ent != nil {
-				dws.Add(ent.Entity)
-			}
-		}
-	}
 }
 
 //Adds an Entity to the chunk
@@ -92,9 +79,7 @@ func (c *Chunk) Update(w *World) (removed []*chunkEntity) {
 		}
 	}
 	if len(removed) > 0 {
-		fmt.Println("Removing nils: ", c.entities)
 		c.RemoveNil()
-		fmt.Println("ALL not nil: ", c.entities)
 	}
 	return
 }
@@ -165,37 +150,6 @@ func (c *Chunk) SetDelta(bs []byte) (removed []*chunkEntity) {
 	return
 }
 
-//Writes the chunk to the disk
-func (c *Chunk) ToDisk() error {
-	bs := make([]byte, 0)
-	for fcID, l := range c.entities {
-		bs = append(bs, cmp.Int16ToBytes(int16(fcID))...)
-		for idx, entity := range l {
-			bs = append(bs, append(entity.ToBytes(), byte(idx))...)
-		}
-	}
-	return ioutil.WriteFile(c.tmpPath, bs, 0644)
-}
-
-//Loads the chunk from the disk
-func (c *Chunk) ToRAM() error {
-	data, err := ioutil.ReadFile(c.tmpPath)
-	if err != nil {
-		return err
-	}
-	for _, l := range c.entities {
-		fcID := int(cmp.BytesToInt16(data[0:1]))
-		data = data[2:]
-		for range l {
-			idx := int(data[3])
-			c.entities[fcID][idx].Entity = c.cf.Get(fcID)
-			c.entities[fcID][idx].FromBytes(data[:3])
-			data = data[4:]
-		}
-	}
-	return nil
-}
-
 //Returns the relative position of a entity in a chunk
 func (c *Chunk) RelPosOfEntity(e *Entity) (byte, byte, error) {
 	eX, eY := e.IntPos()
@@ -204,6 +158,17 @@ func (c *Chunk) RelPosOfEntity(e *Entity) (byte, byte, error) {
 		return 0, 0, ERR_ENTITY_NOT_IN_THIS_CHUNK
 	}
 	return byte(relX), byte(relY), nil
+}
+
+//Adds all entities of the chunk to drawables
+func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
+	for _, l := range c.entities {
+		for _, ent := range l {
+			if ent != nil {
+				dws.Add(ent.Entity)
+			}
+		}
+	}
 }
 
 //converts 2d coords in a chunk to a index
@@ -243,21 +208,20 @@ func (ce *chunkEntity) SaveChanges() {
 	ce.changes = ce.ToBytes()
 }
 func (ce *chunkEntity) FromBytes(bs []byte) {
-	ce.Entity.SetData(bs[0:1])
+	//ce.Entity.SetData(bs[0:1])
 	ce.chunkPosIdx = bs[2]
 	x, y := IdxtoChunkCoord2D(bs[2])
 	ce.chunkPos = [2]byte{byte(x), byte(y)}
 	ce.Entity.SetTopLeftTo(float64(x), float64(y))
 }
 func (ce *chunkEntity) ToBytes() (bs []byte) {
-	defer func() { ce.Entity = nil }()
 	bs = make([]byte, 3)
-	copy(bs[0:1], ce.Entity.GetData())
+	//copy(bs[0:1], ce.Entity.GetData())
 	bs[2] = ce.chunkPosIdx
 	return
 }
 func (ce *chunkEntity) Update(c *Chunk, w *World) error {
-	ce.Entity.Update(w)
+	ce.Entity.UpdateAll(w)
 	rx, ry, err := c.RelPosOfEntity(ce.Entity)
 	if err != nil {
 		return err
@@ -267,3 +231,35 @@ func (ce *chunkEntity) Update(c *Chunk, w *World) error {
 	ce.chunkPosIdx = ChunkCoord2DtoIdx(int(rx), int(ry))
 	return nil
 }
+
+/**
+//DEPRECATED
+//Writes the chunk to the disk
+func (c *Chunk) ToDisk() error {
+	bs := make([]byte, 0)
+	for fcID,l := range(c.entities) {
+		bs = append(bs, cmp.Int16ToBytes(int16(fcID))...)
+		for idx,entity := range(l) {
+			bs = append(bs, append(entity.ToBytes(), byte(idx))...)
+			entity.Entity = nil
+		}
+	}
+	return ioutil.WriteFile(c.tmpPath, bs, 0644)
+}
+//Loads the chunk from the disk
+func (c *Chunk) ToRAM() error {
+	data, err := ioutil.ReadFile(c.tmpPath)
+	if err != nil {return err}
+	for _,l := range(c.entities) {
+		fcID := int(cmp.BytesToInt16(data[0:1]))
+		data = data[2:]
+		for range(l) {
+			idx := int(data[3])
+			c.entities[fcID][idx].Entity = c.cf.Get(fcID)
+			c.entities[fcID][idx].FromBytes(data[:3])
+			data = data[4:]
+		}
+	}
+	return nil
+}
+**/
