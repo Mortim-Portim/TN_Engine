@@ -4,7 +4,6 @@ import (
 	"marvin/GraphEng/GE"
 	"marvin/TN_Engine/TNE"
 
-	//"runtime"
 	"fmt"
 	"time"
 
@@ -47,28 +46,28 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
 		g.character.ChangeOrientation(0)
 		if GE.IsKeyJustDown(ebiten.KeyA) {
-			g.character.Move(1, FPS/4)
+			g.character.Move(1, FPS/6)
 		}
 		moving = true
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
 		g.character.ChangeOrientation(1)
 		if GE.IsKeyJustDown(ebiten.KeyD) {
-			g.character.Move(1, FPS/4)
+			g.character.Move(1, FPS/6)
 		}
 		moving = true
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		g.character.ChangeOrientation(2)
 		if GE.IsKeyJustDown(ebiten.KeyW) {
-			g.character.Move(1, FPS/4)
+			g.character.Move(1, FPS/6)
 		}
 		moving = true
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
 		g.character.ChangeOrientation(3)
 		if GE.IsKeyJustDown(ebiten.KeyS) {
-			g.character.Move(1, FPS/4)
+			g.character.Move(1, FPS/6)
 		}
 		moving = true
 	}
@@ -111,16 +110,18 @@ func main() {
 	fmt.Println("Rolling Dice took: ", time.Now().Sub(diceStart))
 	fmt.Println(result)
 
-	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 360, 202, FPS), 0}
+	game := &TestGame{nil, nil, GE.GetNewRecorder(FPS*5, 928, 522, FPS), 0}
 
 	cf, err := TNE.GetEntityFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
 
 	uFncs := make(map[string]func(e *TNE.Entity, world *TNE.World))
 	uFncs["test"] = func(ent *TNE.Entity, world *TNE.World) {
+		fmt.Println("Updating")
 		if (*world.FrameCounter)%30 == 0 {
-			ent.Move(1, 30)
+			ent.Move(1, 15)
 		}
+		ent.KeepMoving(true)
 	}
 	//uFncs["test_2"] = uFncs["test"]
 
@@ -135,16 +136,18 @@ func main() {
 	fmt.Println("Getting took: ", time.Now().Sub(getStart))
 	game.character = &TNE.Player{TNE.Race{Entity: *c}}
 
-	game.world = TNE.GetWorld(0, 0, float64(screenWidth), float64(screenHeight), 16, 9, 4, 6, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
+	game.world = TNE.GetWorld(0, 0, float64(screenWidth), float64(screenHeight), 45, 27, 7, 7, 1, cf, &game.frame, "./res/Worlds/TestWorld1", "TestMap1", "./res/Worlds/TestWorld1/tiles", "./res/Worlds/TestWorld1/structObjs")
 	game.world.AddPlayer(game.character)
 	err = game.world.SetActivePlayer(0)
 	GE.ShitImDying(err)
 
 	chicken := cf.Get(0)
-
+	chicken.ChangeOrientation(1)
 	fmt.Println("Chicken: ",chicken.Print())
 	err = game.world.AddEntity(0,0,chicken)
 	GE.ShitImDying(err)
+
+	game.world.Structure.GetFrame(3.0, 100, 16)
 
 	fmt.Println(game.world.Print())
 
