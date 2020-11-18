@@ -1,8 +1,8 @@
 package main
 
 import (
-	"marvin/GraphEng/GE"
-	"marvin/TN_Engine/TNE"
+	"github.com/mortim-portim/GraphEng/GE"
+	"github.com/mortim-portim/TN_Engine/TNE"
 
 	"fmt"
 	"time"
@@ -143,8 +143,8 @@ func main() {
 
 	chicken := cf.Get(0)
 	chicken.ChangeOrientation(1)
-	fmt.Println("Chicken: ",chicken.Print())
-	err = game.world.AddEntity(0,0,chicken)
+	fmt.Println("Chicken: ", chicken.Print())
+	err = game.world.AddEntity(0, 0, chicken)
 	GE.ShitImDying(err)
 
 	game.world.Structure.GetFrame(3.0, 100, 16)
