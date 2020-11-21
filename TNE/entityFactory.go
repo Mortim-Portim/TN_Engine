@@ -43,7 +43,7 @@ func (cf *EntityFactory) Print() (out string) {
 		cf.rootPath, cf.crNames, len(cf.entities), cf.prepare, *cf.frameCounter)
 	return
 }
-func (cf *EntityFactory) SetUpdateFunction(fncs map[string]func(e *Entity, world *World)) {
+func (cf *EntityFactory) SetUpdateFunction(fncs map[string]EntityUpdater) {
 	for name, idx := range cf.mapper {
 		fnc, ok := fncs[name]
 		if ok {

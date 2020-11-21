@@ -4,7 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten"
 	"github.com/mortim-portim/GraphEng/GE"
 
-	//cmp "marvin/GraphEng/Compression"
 	"errors"
 	"fmt"
 	"math"
@@ -12,7 +11,6 @@ import (
 
 	cmp "github.com/mortim-portim/GraphEng/Compression"
 )
-
 const (
 	CREATURE_ANIM_STANDARD  = "idle_L"
 	CREATURE_ANIM_IDLE_L    = 0
@@ -25,18 +23,28 @@ const (
 	CREATURE_ANIM_RUNNING_D = 7
 )
 const CREATURE_WOBJ = "#WOBJ"
-
 var ERR_WRONG_BYTE_LENGTH = errors.New("Wrong byte length")
+var ERR_UNKNOWN_ACTION = errors.New("Unknown Action")
 
-//changes should consist out of a list slices with the following meanings
-const (
-	ENTITY_START_MOVE         = byte(0)
-	ENTITY_KEEP_MOVING        = byte(1)
-	ENTITY_CHANGE_ORIENTATION = byte(2)
+var (
+	ENTITY_START_MOVE = 				byte(0)
+	ENTITY_KEEP_MOVING = 				byte(1)
+	ENTITY_STOP_KEEP_MOVING =			byte(2)
+	ENTITY_CHANGE_ORIENTATION_LEFT = 	byte(3)
+	ENTITY_CHANGE_ORIENTATION_RIGHT = 	byte(4)
+	ENTITY_CHANGE_ORIENTATION_UP = 		byte(5)
+	ENTITY_CHANGE_ORIENTATION_DOWN = 	byte(6)
 )
 
-type EntityUpdater func(e *Entity, world *World)
-
+type EntityUpdater interface {
+	Update(e *Entity, world *World)
+}
+type StandardEntityUpdater struct {
+	Updater func(e *Entity, world *World)
+}
+func (su *StandardEntityUpdater) Update(e *Entity, world *World) {
+	su.Updater(e, world)
+}
 type Entity struct {
 	GE.WObj
 
@@ -50,69 +58,75 @@ type Entity struct {
 	movingFrames, movedFrames int
 	movingStepSize            float64
 
-	//IsDirty should only change when an action is started (Move, KeepMoving, ChangeOrientation)
-	changed, isDirty bool
+	changed bool
 
 	factoryCreationId int16
+	
+	AppliedActions []byte
 
 	frame   *int
 	Updater EntityUpdater
 }
-
-func (e *Entity) GetDelta() []byte {
-	return []byte{byte(e.orientation), byte(e.currentAnim)}
-}
-func (e *Entity) SetDelta(bs []byte) {
-	e.orientation = uint8(bs[0])
-	e.currentAnim = uint8(bs[1])
-}
-
-//Loads an entity from full data len(data) = 37
-func (cf *EntityFactory) LoadEntityFromFullData(data []byte) (*Entity, error) {
-	if len(data) != 37 {
+func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
+	if len(data) != 18 {
 		return nil, ERR_WRONG_BYTE_LENGTH
 	}
-	fcID := cmp.BytesToInt16(data[35:36])
-	e := cf.Get(int(fcID))
-	e.currentAnim = uint8(data[0])
-	e.xPos = cmp.BytesToInt64(data[1:8])
-	e.yPos = cmp.BytesToInt64(data[9:16])
-	e.orientation = uint8(data[17])
-	e.neworientation = uint8(data[18])
-	e.isMoving = cmp.ByteToBool(data[19])
-	e.keepMoving = cmp.ByteToBool(data[20])
-	e.movingFrames = int(cmp.BytesToInt16(data[21:22]))
-	e.movedFrames = int(cmp.BytesToInt16(data[23:24]))
-	e.movingStepSize = cmp.BytesToFloat64(data[25:32])
-	e.changed = cmp.ByteToBool(data[33])
-	e.isDirty = cmp.ByteToBool(data[34])
+	fcID := int(cmp.BytesToInt16(data[16:18]))
+	e := cf.Get(fcID)
+	e.xPos = cmp.BytesToInt64(data[0:8])
+	e.yPos = cmp.BytesToInt64(data[8:16])
 	return e, nil
 }
-
-//(1)currentAnim| (8)xPos| (8)yPos| (1)orientation| (1)neworientation| (1)isMoving| (1)keepMoving| (2)movingFrames|
-//(2)movedFrames| (8)movingStepSize| (1)changed| (1)isDirty| (2)factoryCreationId| len() = 37
-func (e *Entity) FullData() (data []byte) {
-	data = make([]byte, 37)
-	data[0] = byte(e.currentAnim)
-	copy(data[1:8], cmp.Int64ToBytes(e.xPos))
-	copy(data[9:16], cmp.Int64ToBytes(e.yPos))
-	data[17] = byte(e.orientation)
-	data[18] = byte(e.neworientation)
-	data[19] = cmp.BoolToByte(e.isMoving)
-	data[20] = cmp.BoolToByte(e.keepMoving)
-	copy(data[21:22], cmp.Int16ToBytes(int16(e.movingFrames)))
-	copy(data[23:24], cmp.Int16ToBytes(int16(e.movedFrames)))
-	copy(data[25:32], cmp.Float64ToBytes(e.movingStepSize))
-	data[33] = cmp.BoolToByte(e.changed)
-	data[34] = cmp.BoolToByte(e.isDirty)
-	copy(data[35:36], cmp.Int16ToBytes(e.factoryCreationId))
+func (e *Entity) GetCreationData() (bs []byte) {
+	bs = make([]byte, 18)
+	copy(bs[0:8], cmp.Int64ToBytes(e.xPos))
+	copy(bs[8:16], cmp.Int64ToBytes(e.yPos))
+	copy(bs[16:18], cmp.Int16ToBytes(e.factoryCreationId))
 	return
 }
-
+func (e *Entity) GetDelta() []byte {
+	return e.AppliedActions
+}
+func (e *Entity) SetDelta(bs []byte) {
+	for len(bs) > 0 {
+		upTo := 1
+		//Check for an action with more data here
+		if bs[0] == ENTITY_START_MOVE {
+			upTo = 3
+		}
+		ac := bs[0:upTo]
+		bs = bs[upTo:]
+		e.ApplyAction(ac)
+	}
+}
+func (e *Entity) ApplyAction(ac []byte) error {
+	t := ac[0]
+	if t == ENTITY_START_MOVE {
+		e.Move(int(ac[1]), int(ac[2]))
+	}else if t == ENTITY_KEEP_MOVING {
+		e.KeepMoving(true)
+	}else if t == ENTITY_STOP_KEEP_MOVING {
+		e.KeepMoving(false)
+	}else if t == ENTITY_CHANGE_ORIENTATION_LEFT {
+		e.ChangeOrientation(0)
+	}else if t == ENTITY_CHANGE_ORIENTATION_RIGHT {
+		e.ChangeOrientation(1)
+	}else if t == ENTITY_CHANGE_ORIENTATION_UP {
+		e.ChangeOrientation(2)
+	}else if t == ENTITY_CHANGE_ORIENTATION_DOWN {
+		e.ChangeOrientation(3)
+	}else{
+		return ERR_UNKNOWN_ACTION
+	}
+	return nil
+}
+func (e *Entity) ResetAppliedActions() {
+	e.AppliedActions = make([]byte, 0)
+}
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
-	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving,
-		e.keepMoving, e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.isDirty, e.factoryCreationId, e.frame, e.Updater}
+	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
+		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.AppliedActions, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
 		if anim != nil {
@@ -143,7 +157,7 @@ func (e *Entity) UpdateAll(w *World) {
 		e.UpdateOrientationAnim()
 	}
 	if e.Updater != nil {
-		e.Updater(e, w)
+		e.Updater.Update(e, w)
 	}
 }
 
@@ -157,7 +171,7 @@ func (e *Entity) Move(length, frames int) {
 	if e.isMoving {
 		return
 	}
-	//THIS SHOULD CAUSE A CHANGE
+	e.AppliedActions = append(e.AppliedActions, []byte{ENTITY_START_MOVE, byte(length), byte(frames)}...)
 	e.isMoving = true
 	e.movingFrames = frames
 	e.movedFrames = 0
@@ -192,6 +206,16 @@ func (e *Entity) ChangeOrientation(newO uint8) {
 			e.neworientation = newO
 		} else {
 			e.orientation = newO
+		}
+		switch newO {
+			case 0:
+				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_LEFT)
+			case 1:
+				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_RIGHT)
+			case 2:
+				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_UP)
+			case 3:
+				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_DOWN)
 		}
 	}
 }
@@ -250,7 +274,11 @@ func (e *Entity) IsMoving() bool {
 }
 func (e *Entity) KeepMoving(mv bool) {
 	if mv != e.keepMoving {
-		//THIS SHOULD CAUSE A CHANGE
+		ac := ENTITY_KEEP_MOVING
+		if !mv {
+			ac = ENTITY_STOP_KEEP_MOVING
+		}
+		e.AppliedActions = append(e.AppliedActions, ac)
 		e.keepMoving = mv
 	}
 }
@@ -312,5 +340,50 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 		e.anims = append(e.anims, anim)
 	}
 	e.setIntPos()
+	e.ResetAppliedActions()
 	return e, nil
 }
+
+/**
+//Loads an entity from full data len(data) = 37
+func (cf *EntityFactory) LoadEntityFromFullData(data []byte) (*Entity, error) {
+	if len(data) != 37 {
+		return nil, ERR_WRONG_BYTE_LENGTH
+	}
+	fcID := cmp.BytesToInt16(data[35:36])
+	e := cf.Get(int(fcID))
+	e.currentAnim = uint8(data[0])
+	e.xPos = cmp.BytesToInt64(data[1:8])
+	e.yPos = cmp.BytesToInt64(data[9:16])
+	e.orientation = uint8(data[17])
+	e.neworientation = uint8(data[18])
+	e.isMoving = cmp.ByteToBool(data[19])
+	e.keepMoving = cmp.ByteToBool(data[20])
+	e.movingFrames = int(cmp.BytesToInt16(data[21:22]))
+	e.movedFrames = int(cmp.BytesToInt16(data[23:24]))
+	e.movingStepSize = cmp.BytesToFloat64(data[25:32])
+	e.changed = cmp.ByteToBool(data[33])
+	e.isDirty = cmp.ByteToBool(data[34])
+	return e, nil
+}
+
+//(1)currentAnim| (8)xPos| (8)yPos| (1)orientation| (1)neworientation| (1)isMoving| (1)keepMoving| (2)movingFrames|
+//(2)movedFrames| (8)movingStepSize| (1)changed| (1)isDirty| (2)factoryCreationId| len() = 37
+func (e *Entity) FullData() (data []byte) {
+	data = make([]byte, 37)
+	data[0] = byte(e.currentAnim)
+	copy(data[1:8], cmp.Int64ToBytes(e.xPos))
+	copy(data[9:16], cmp.Int64ToBytes(e.yPos))
+	data[17] = byte(e.orientation)
+	data[18] = byte(e.neworientation)
+	data[19] = cmp.BoolToByte(e.isMoving)
+	data[20] = cmp.BoolToByte(e.keepMoving)
+	copy(data[21:22], cmp.Int16ToBytes(int16(e.movingFrames)))
+	copy(data[23:24], cmp.Int16ToBytes(int16(e.movedFrames)))
+	copy(data[25:32], cmp.Float64ToBytes(e.movingStepSize))
+	data[33] = cmp.BoolToByte(e.changed)
+	data[34] = cmp.BoolToByte(e.isDirty)
+	copy(data[35:36], cmp.Int16ToBytes(e.factoryCreationId))
+	return
+}
+**/
