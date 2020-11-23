@@ -5,7 +5,7 @@ import (
 	//"github.com/hajimehoshi/ebiten"
 	"errors"
 
-	//cmp "github.com/mortim-portim/GraphEng/Compression"
+	cmp "github.com/mortim-portim/GraphEng/Compression"
 )
 /**
 TODO
@@ -26,31 +26,53 @@ func GetChunk(x, y int, cf *EntityFactory, tmpPath string) (c *Chunk) {
 	c = &Chunk{pos: [2]int16{int16(x), int16(y)}, cf: cf, tmpPath: tmpPath}
 	c.tileLT = [2]int16{CHUNK_SIZE * c.pos[0], CHUNK_SIZE * c.pos[1]}
 	c.tileRB = [2]int16{c.tileLT[0] + CHUNK_SIZE, c.tileLT[1] + CHUNK_SIZE}
-	c.entities = make([]*chunkEntity, 0)
+	c.entities = make([]*Entity, 0)
 	c.changes = make([]int, 0)
+	c.createdEntities = make([][]byte, 0)
+	c.removedEntities = make([]byte, 0)
 	return
 }
 
 type Chunk struct {
 	pos, tileLT, tileRB            [2]int16
-	entities                       []*chunkEntity
+	entities                       []*Entity
 	changes 					   []int
+	createdEntities 			   [][]byte
+	removedEntities				   []byte
 	cf                             *EntityFactory
 	tmpPath                        string
 	LastUpdateFrame, LastDrawFrame int
 }
 
 /**
+Adds an Entity to the chunk and syncronizes it
+**/
+func (c *Chunk) AddEntity(e *Entity) error {
+	bs := e.GetCreationData()
+	c.createdEntities = append(c.createdEntities, bs)
+	return nil
+}
+/**
+Adds an Entity to the chunk based on the given creation data
+**/
+func (c *Chunk) AddEntityFromCreationData(bs []byte) error {
+	ent, err := c.cf.LoadEntityFromCreationData(bs)
+	if err != nil {
+		return err
+	}
+	c.AddEntityLocal(ent)
+	return nil
+}
+/**
 Adds an Entity to the chunk
 called by world to move entities to this chunk
 **/
-func (c *Chunk) AddEntity(e *Entity) error {
-	rx, ry, err := c.RelPosOfEntity(e)
+func (c *Chunk) AddEntityLocal(e *Entity) error {
+	_, _, err := c.RelPosOfEntity(e)
 	if err != nil {
 		return err
 	} else {
-		newEnt := getNewChunkEntity(e, rx, ry)
-		c.entities = append(c.entities, newEnt)
+		c.entities = append(c.entities, e)
 	}
 	return nil
 }
@@ -59,11 +81,12 @@ Updates the chunk, returning removed entities
 sets the removed entities to nil
 RemoveNil should be called afterwards
 **/
-func (c *Chunk) Update(w *World) (removed []*chunkEntity) {
-	removed = make([]*chunkEntity, 0)
+func (c *Chunk) Update(w *World) (removed []*Entity) {
+	removed = make([]*Entity, 0)
 	for idx, entity := range c.entities {
 		if entity != nil {
-			err := entity.Update(c, w)
+			entity.UpdateAll(w)
+			_, _, err := c.RelPosOfEntity(entity)
 			if err != nil {
 				//Creature is not in this chunk anymore
 				removed = append(removed, entity)
@@ -80,66 +103,86 @@ func (c *Chunk) Update(w *World) (removed []*chunkEntity) {
 /**
 Removes all entities that are nil
 **/
-func (c *Chunk) RemoveNil() error {
+func (c *Chunk) RemoveNilLocal() {
+	rems := 0
 	for idx, _ := range c.entities {
-		if c.entities[idx] == nil {
-			c.Remove(idx)
+		if c.entities[idx-rems] == nil {
+			c.RemoveLocal(idx-rems)
+			rems ++
 		}
 	}
-	return nil
 }
-
 /**
 Removes a entity with speciefied index
 **/
-func (c *Chunk) Remove(i int) {
+func (c *Chunk) RemoveLocal(i int) {
 	c.entities[i] = c.entities[len(c.entities)-1]
 	c.entities = c.entities[:len(c.entities)-1]
 }
 
-//returns changes as []byte
+/**
+Removes a entity with speciefied index and syncronizes it
+**/
+func (c *Chunk) Remove(i int) {
+	c.removedEntities = append(c.removedEntities, byte(i))
+}
+
+/**
+returns changes as []byte
+[len(created) | len(removed) | {removed} | {merged} ]
+change -> create -> remove
+**/
 func (c *Chunk) GetDelta() (bs []byte) {
-//	//[1]byte
-//	bs = []byte{byte(len(c.removed))}
-//	for _, rem := range c.removed {
-//		//[3]byte
-//		bs = append(bs, cmp.Int16ToBytes(int16(rem[0]))...)
-//		bs = append(bs, byte(rem[1]))
-//	}
-//	for _, chng := range c.changes {
-//		//[6]byte
-//		bs = append(bs, cmp.Int16ToBytes(int16(chng[0]))...)
-//		bs = append(bs, byte(chng[1]))
-//		bs = append(bs, c.entities[chng[0]][chng[1]].changes...)
-//	}
+	bs = append([]byte{byte(len(c.createdEntities)), byte(len(c.removedEntities))}, c.removedEntities...)
+	entChngs := make([][]byte, 0)
+	for i,ent := range(c.entities) {
+		chngs := ent.GetDelta()
+		if len(chngs) > 0 {
+			entChngs = append(entChngs, append([]byte{byte(i)}, chngs...))
+			ent.ResetAppliedActions()
+		}
+	}
+	bs = append(bs, cmp.Merge(entChngs, c.createdEntities...)...)
+	
+	for _,crBs := range(c.createdEntities) {
+		c.AddEntityFromCreationData(crBs)
+	}
+	for _,entI := range(c.removedEntities) {
+		c.entities[int(entI)] = nil
+	}
+	c.RemoveNilLocal()
+	
 	c.changes = make([]int, 0)
+	c.createdEntities = make([][]byte, 0)
+	c.removedEntities = make([]byte, 0)
 	return
 }
 
-//sets changes
+/**
+sets changes
+**/
 func (c *Chunk) SetDelta(bs []byte) {
+	createdL := int(bs[0])
+	rems := int(bs[1])
+	lengths := GetSliceOfVal(createdL, ENTITY_CREATION_DATA_LENGTH)
+	bs = bs[2:]
+	removed := bs[:rems]; bs = bs[rems:]
+	createdAndChanges := cmp.Demerge(bs, lengths)
+	created := createdAndChanges[:createdL]
+	changes := createdAndChanges[createdL:]
 	
-//	removed = make([]*chunkEntity, 0)
-//	rems := int(bs[0])
-//	bs = bs[1:]
-//	for i := 0; i < rems; i++ {
-//		fcID := int(cmp.BytesToInt16(bs[0:1]))
-//		idx := int(bs[2])
-//		removed = append(removed, c.entities[fcID][idx])
-//		c.Remove(fcID, idx)
-//		bs = bs[3:]
-//	}
-//	for i := 0; i < len(bs)/6; i++ {
-//		fcID := int(cmp.BytesToInt16(bs[0:1]))
-//		idx := int(bs[2])
-//		if idx >= len(c.entities[fcID]) {
-//			c.entities[fcID] = append(c.entities[fcID], getNewChunkEntityFromBytes(bs[3:5], c.cf, fcID))
-//		} else {
-//			c.entities[fcID][idx].FromBytes(bs[3:5])
-//		}
-//		bs = bs[6:]
-//	}
-//	return
+	for _,chngs := range(changes) {
+		idx := int(chngs[0])
+		c.entities[idx].SetDelta(chngs[1:])
+	}
+	
+	for _,crBs := range(created) {
+		c.AddEntityFromCreationData(crBs)
+	}
+	for _,entI := range(removed) {
+		c.entities[int(entI)] = nil
+	}
+	c.RemoveNilLocal()
 }
 
 //Returns the relative position of a entity in a chunk
@@ -156,7 +199,7 @@ func (c *Chunk) RelPosOfEntity(e *Entity) (byte, byte, error) {
 func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 	for _, ent := range c.entities {
 		if ent != nil {
-			dws.Add(ent.Entity)
+			dws.Add(ent)
 		}
 	}
 }
@@ -176,14 +219,16 @@ func IdxtoChunkCoord2D(idx byte) (x, y int) {
 	y = int((idx - (idx % csm1)) / csm1)
 	return
 }
+
+
 /**
+//DEPRECATED
 func getNewChunkEntityFromBytes(bs []byte, cf *EntityFactory, fcID int) (e *chunkEntity) {
 	ent := cf.Get(fcID)
 	e = &chunkEntity{ent, [2]byte{}, 0}
 	e.FromBytes(bs)
 	return e
 }
-**/
 func getNewChunkEntity(e *Entity, rx, ry byte) *chunkEntity {
 	return &chunkEntity{e, [2]byte{rx, ry}, ChunkCoord2DtoIdx(int(rx), int(ry))}
 }
@@ -211,9 +256,6 @@ func (ce *chunkEntity) Update(c *Chunk, w *World) error {
 	ce.chunkPosIdx = ChunkCoord2DtoIdx(int(rx), int(ry))
 	return nil
 }
-
-/**
-//DEPRECATED
 //Writes the chunk to the disk
 func (c *Chunk) ToDisk() error {
 	bs := make([]byte, 0)

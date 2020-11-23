@@ -20,3 +20,10 @@ func PrintPerformance(frame, timeTaken int) (out string) {
 func bToMb(b uint64) uint64 {
     return b / 1024 / 1024
 }
+func GetSliceOfVal(length, val int) (is []int) {
+	is = make([]int, length)
+	for i,_ := range(is) {
+		is[i] = val
+	}
+	return
+}

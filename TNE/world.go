@@ -241,13 +241,13 @@ Reassigns all entities in ents to the chunk that they fit in
 This should only be called when the entities move to a different chunk
 called by !!UpdatePlayerChunks!!
 **/
-func (w *World) ReAssignEntities(ents []*chunkEntity) {
+func (w *World) ReAssignEntities(ents []*Entity) {
 	for _, ent := range ents {
 		x, y := ent.IntPos()
 		cX, cY := GetChunkOfTile(int(x), int(y))
 		idx, err := w.ChunkMat.Get(cX, cY)
 		if err == nil {
-			w.Chunks[idx].AddEntity(ent.Entity)
+			w.Chunks[idx].AddEntityLocal(ent)
 		}
 	}
 }
@@ -256,8 +256,8 @@ func (w *World) ReAssignEntities(ents []*chunkEntity) {
 Updates all chunks in a pattern given by CHUNK_DELTAS[chunkRange] that lie around plXYChunkR[0], plXYChunkR[1]
 called by !!UpdatePlayerChunks!!
 **/
-func (w *World) UpdateChunks(chunkRange int, plXYChunkR ...[2]int) (allRems []*chunkEntity) {
-	allRems = make([]*chunkEntity, 0)
+func (w *World) UpdateChunks(chunkRange int, plXYChunkR ...[2]int) (allRems []*Entity) {
+	allRems = make([]*Entity, 0)
 	done := make(chan bool)
 	for _, posTs := range plXYChunkR {
 		go func() {

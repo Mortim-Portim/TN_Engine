@@ -67,8 +67,10 @@ type Entity struct {
 	frame   *int
 	Updater EntityUpdater
 }
+
+const ENTITY_CREATION_DATA_LENGTH = 18
 func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
-	if len(data) != 18 {
+	if len(data) != ENTITY_CREATION_DATA_LENGTH {
 		return nil, ERR_WRONG_BYTE_LENGTH
 	}
 	fcID := int(cmp.BytesToInt16(data[16:18]))
@@ -78,11 +80,14 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	return e, nil
 }
 func (e *Entity) GetCreationData() (bs []byte) {
-	bs = make([]byte, 18)
+	bs = make([]byte, ENTITY_CREATION_DATA_LENGTH)
 	copy(bs[0:8], cmp.Int64ToBytes(e.xPos))
 	copy(bs[8:16], cmp.Int64ToBytes(e.yPos))
 	copy(bs[16:18], cmp.Int16ToBytes(e.factoryCreationId))
 	return
+}
+func (e *Entity) ResetAppliedActions() {
+	e.AppliedActions = make([]byte, 0)
 }
 func (e *Entity) GetDelta() []byte {
 	return e.AppliedActions
@@ -119,9 +124,6 @@ func (e *Entity) ApplyAction(ac []byte) error {
 		return ERR_UNKNOWN_ACTION
 	}
 	return nil
-}
-func (e *Entity) ResetAppliedActions() {
-	e.AppliedActions = make([]byte, 0)
 }
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
