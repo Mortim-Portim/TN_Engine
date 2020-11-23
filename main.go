@@ -114,17 +114,17 @@ func main() {
 
 	cf, err := TNE.GetEntityFactory("./res/creatures/", &game.frame, 3)
 	GE.ShitImDying(err)
-	
-	Updater := func(ent *TNE.Entity, world *TNE.World) {
+
+	/*Updater := func(ent *TNE.Entity, world *TNE.World) {
 		fmt.Println("Updating")
 		if (*world.FrameCounter)%30 == 0 {
 			ent.Move(1, 15)
 		}
 		ent.KeepMoving(true)
-	}
-	
+	}*/
+
 	uFncs := make(map[string]TNE.EntityUpdater)
-	uFncs["test"] = TNE.EntityUpdater(&TNE.StandardEntityUpdater{Updater})
+	uFncs["test"] = &TNE.EnupPassive{}
 	//uFncs["test_2"] = uFncs["test"]
 
 	cf.SetUpdateFunction(uFncs)
