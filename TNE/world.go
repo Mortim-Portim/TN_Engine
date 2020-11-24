@@ -12,7 +12,7 @@ var ERR_UNKNOWN_PLAYER = errors.New("Unknown player")
 
 /**
 TODO
-syncronize players, entitys, lightlevel
+syncronize frame(int), chunkUpdateRadius(byte), lightlevel(int), Actions(string)
 **/
 
 //X,Y,W,H float64, tW, tH, cW,cH, ChunkUpdateRange int, CF *EntityFactory, frameCounter *int, path, wrld_name, tile_F, struct_F string

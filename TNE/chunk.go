@@ -7,13 +7,6 @@ import (
 
 	cmp "github.com/mortim-portim/GraphEng/Compression"
 )
-/**
-TODO
-delete chunkEntity
-add an Add method that syncronizes entities using CreationData
-
-implement a getDelta and setDelta method
-**/
 
 const CHUNK_SIZE = 16
 
