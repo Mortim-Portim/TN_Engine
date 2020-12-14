@@ -1,13 +1,14 @@
 package TNE
 
 import (
-	"errors"
 	"fmt"
-
 	"github.com/mortim-portim/GraphEng/GE"
 )
 
 const INDEX_FILE_NAME = "#index.txt"
+const(
+	ERR_NO_FACTORY_FOR_ENTITY_BY_NAME = 	"No factory for Entity: %v, with fcID: %v and Name: %s"
+)
 
 //returns a entity factory that loads all entities from a specific path, prepare specifies the number of entities to be prepared
 func GetEntityFactory(path string, frameCounter *int, prepare int) (*EntityFactory, error) {
@@ -43,14 +44,29 @@ func (cf *EntityFactory) Print() (out string) {
 		cf.rootPath, cf.crNames, len(cf.entities), cf.prepare, *cf.frameCounter)
 	return
 }
-func (cf *EntityFactory) SetUpdateFunction(fncs map[string]EntityUpdater) {
-	for name, idx := range cf.mapper {
-		fnc, ok := fncs[name]
-		if ok {
+func (cf *EntityFactory) SetUpdateFunctionMap(fncs map[string]EntityUpdater) error {
+	err := error(nil)
+	for name, fnc := range fncs {
+		if !cf.HasEntityName(name) {
+			err = fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY_BY_NAME, nil, -1, name)
+		}else{
+			idx, _ := cf.mapper[name]
 			cf.entities[idx].RegiserUpdateFunc(fnc)
 		}
 	}
-	return
+	return err
+}
+func (cf *EntityFactory) SetUpdateFunctionList(fncs []EntityUpdater) error {
+	err := error(nil)
+	if len(fncs) > len(cf.entities) {
+		err = fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY, nil, len(cf.entities))
+		fncs = fncs[:len(cf.entities)]
+	}
+	
+	for i, fnc := range fncs {
+		cf.entities[i].RegiserUpdateFunc(fnc)
+	}
+	return err
 }
 
 //Loads the entities
@@ -59,6 +75,7 @@ func (cf *EntityFactory) Load() error {
 	for i, name := range cf.crNames {
 		ent, err := LoadEntity(cf.rootPath+name, cf.frameCounter)
 		if err != nil {
+			cf.entities = cf.entities[:i]
 			return err
 		}
 		ent.factoryCreationId = int16(i)
@@ -69,42 +86,35 @@ func (cf *EntityFactory) Load() error {
 
 //Should be run on a new goroutine
 //Use prepare in order to save time during runtime
-//Takes ~30.000ns
+//Takes some time
 func (cf *EntityFactory) Prepare() {
-	//done := make(chan bool)
 	for i, cr := range cf.entities {
-		func() {
-			if len(cf.prepared[i]) != cf.prepare {
-				cf.prepared[i] = make([]*Entity, cf.prepare)
+		if len(cf.prepared[i]) != cf.prepare {
+			cf.prepared[i] = make([]*Entity, cf.prepare)
+		}
+		for idx, _ := range cf.prepared[i] {
+			if cf.prepared[i][idx] == nil {
+				cf.prepared[i][idx] = cr.Copy()
 			}
-			for idx, _ := range cf.prepared[i] {
-				if cf.prepared[i][idx] == nil {
-					cf.prepared[i][idx] = cr.Copy()
-				}
-			}
-			//done <- true
-		}()
+		}
 	}
-	/**
-	for range(cf.entities) {
-		<- done
-	}
-	**/
 }
 
 //Slower than Get ~1000ns
 func (cf *EntityFactory) GetByName(name string) (*Entity, error) {
-	idx, ok := cf.mapper[name]
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("No entity with name: %s", name))
+	if !cf.HasEntityName(name) {
+		return nil, fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY_BY_NAME, nil, -1, name)
 	}
-	return cf.Get(idx), nil
+	idx, _ := cf.mapper[name]
+	return cf.Get(idx)
 }
 
 //Returns a new entity, using a prepared one if possible ~500ns
-func (cf *EntityFactory) Get(idx int) (cr *Entity) {
-	crs := cf.prepared[idx]
-	for i, lcr := range crs {
+func (cf *EntityFactory) Get(idx int) (cr *Entity, err error) {
+	if !cf.HasEntityID(idx) {
+		return nil, fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY, nil, idx)
+	}
+	for i, lcr := range cf.prepared[idx] {
 		if lcr != nil {
 			cr = lcr
 			cf.prepared[idx][i] = nil
@@ -113,13 +123,19 @@ func (cf *EntityFactory) Get(idx int) (cr *Entity) {
 	}
 	if cr == nil {
 		cr = cf.entities[idx].Copy()
-		if cr == nil {
-			panic(fmt.Sprintf("There is no entity with index: ", idx))
-		}
 	}
 	return
 }
-
+func (cf *EntityFactory) HasEntityID(fcID int) bool {
+	if fcID >= 0 && fcID < len(cf.entities) {
+		return true
+	}
+	return false
+}
+func (cf *EntityFactory) HasEntityName(name string) bool {
+	_, ok := cf.mapper[name]
+	return ok
+}
 //Returns a slice containing the names of all entities
 func (cf *EntityFactory) EntityNames() []string {
 	return cf.crNames

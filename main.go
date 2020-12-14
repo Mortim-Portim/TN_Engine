@@ -127,14 +127,15 @@ func main() {
 	uFncs["test"] = &TNE.EnupPassive{}
 	//uFncs["test_2"] = uFncs["test"]
 
-	cf.SetUpdateFunction(uFncs)
+	cf.SetUpdateFunctionMap(uFncs)
 
 	prepStart := time.Now()
 	cf.Prepare()
 	fmt.Println("Preparing took: ", time.Now().Sub(prepStart))
 
 	getStart := time.Now()
-	c := cf.Get(1)
+	c, err := cf.Get(1)
+	if err != nil {fmt.Println(err)}
 	fmt.Println("Getting took: ", time.Now().Sub(getStart))
 	game.character = &TNE.Player{TNE.Race{Entity: *c}}
 
@@ -143,7 +144,8 @@ func main() {
 	err = game.world.SetActivePlayer(0)
 	GE.ShitImDying(err)
 
-	chicken := cf.Get(0)
+	chicken, err := cf.Get(0)
+	if err != nil {fmt.Println(err)}
 	chicken.ChangeOrientation(1)
 	fmt.Println("Chicken: ", chicken.Print())
 	err = game.world.AddEntity(0, 0, chicken)

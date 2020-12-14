@@ -34,7 +34,7 @@ type Chunk struct {
 	removedEntities				   []byte
 	cf                             *EntityFactory
 	tmpPath                        string
-	LastUpdateFrame, LastDrawFrame int
+	LastUpdateFrame, LastDowndateFrame int
 }
 
 /**
@@ -93,6 +93,7 @@ func (c *Chunk) Update(w *World) (removed []*Entity) {
 	}
 	return
 }
+
 /**
 Removes all entities that are nil
 **/

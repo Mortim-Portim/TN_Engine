@@ -3,24 +3,20 @@ package TNE
 import (
 	"errors"
 	"fmt"
-
+	"time"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/mortim-portim/GraphEng/GE"
+	"github.com/mortim-portim/GameConn/GC"
 )
 
 var ERR_UNKNOWN_PLAYER = errors.New("Unknown player")
-
-/**
-TODO
-syncronize frame(int), chunkUpdateRadius(byte), lightlevel(int), Actions(string)
-**/
 
 //X,Y,W,H float64, tW, tH, cW,cH, ChunkUpdateRange int, CF *EntityFactory, frameCounter *int, path, wrld_name, tile_F, struct_F string
 func GetWorld(X, Y, W, H float64, tW, tH, cW, cH, ChunkUpdateRange int, CF *EntityFactory, frameCounter *int, path, wrld_name, tile_F, struct_F string) (w *World) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
-	w = &World{Path: path, FrameCounter: frameCounter, CF: CF, ActivePlayerChunk: -1, ChunkUpdateRange: ChunkUpdateRange}
+	w = &World{Path: path, FrameCounter: frameCounter, CF: CF, ActivePlayerChunk: -1}
 	w.Players = make([]*Player, 0)
 
 	done := make(chan bool)
@@ -44,6 +40,14 @@ func GetWorld(X, Y, W, H float64, tW, tH, cW, cH, ChunkUpdateRange int, CF *Enti
 		wS.SetLightLevel(15)
 		wS.SetDisplayWH(tW, tH)
 		w.Structure = wS
+		
+		w.ChunkUpdateRange =   GC.CreateSyncByte(byte(ChunkUpdateRange))
+		w.Actions =			   GC.CreateSyncString("")
+		w.OtherPlayerChanges = GC.CreateSyncString("")
+		w.LocalPlayerChanges = GC.CreateSyncString("")
+		w.SyncedFrame =		   GC.CreateSyncInt64(0)
+		w.SyncVarsHaveUpdate = make(chan bool)
+		
 		done <- true
 	}()
 	<-done
@@ -58,8 +62,6 @@ type World struct {
 	ChunkMat *GE.Matrix
 	//Stores all chunks
 	Chunks []*Chunk
-	//Stores a referenc to the range for updating chunks around players
-	ChunkUpdateRange int
 
 	//Stores all Players
 	Players []*Player
@@ -72,6 +74,15 @@ type World struct {
 
 	Path         string
 	FrameCounter *int
+	
+	SyncVarsHaveUpdate chan bool
+	LastSyncedTime time.Time
+	LastSyncedFrame int
+	Ping time.Duration
+	
+	SyncedFrame *GC.SyncInt64
+	ChunkUpdateRange *GC.SyncByte
+	Actions, OtherPlayerChanges, LocalPlayerChanges *GC.SyncString
 }
 
 func (w *World) Print() (out string) {
@@ -103,7 +114,6 @@ func (w *World) SetActivePlayer(playerIdx int) error {
 	w.ActivePlayerChange = true
 	return nil
 }
-
 /**
 Draws the surroundings of the active player
 CALL on !!Client!! on !!every frame!!
@@ -122,7 +132,6 @@ func (w *World) UpdateActivePlayer() {
 	activePlayer := w.Players[w.ActivePlayer]
 	activePlayer.Update(w)
 	if activePlayer.Changed() {
-		//fmt.Println("Player changed")
 		w.ActivePlayerChange = true
 		activePlayer.NotChangedAnymore()
 	}
@@ -150,10 +159,8 @@ func (w *World) UpdateDrawables() {
 		}
 	}
 }
-
 /**
 Updates the world structures obj, if the player moved
-Updates the lightlevel and possible changes of a lights position
 CALL on !!Client!! on !!every frame!!
 **/
 func (w *World) UpdateWorldStructure() {
@@ -180,7 +187,6 @@ func (w *World) AddEntity(cX, cY int, e *Entity) error {
 	}
 	return w.Chunks[idx].AddEntity(e)
 }
-
 /**
 SHOULD remove a player by his name
 CALL on !!Server!!
@@ -188,7 +194,6 @@ CALL on !!Server!!
 func (w *World) RemovePlayer(name string) {
 
 }
-
 /**
 Adds a player
 CALL on !!Server!!
@@ -206,6 +211,14 @@ func (w *World) UpdateLights() {
 	w.Structure.UpdateLightLevel(1)
 	w.Structure.UpdateAllLightsIfNecassary()
 }
+/**
+Downdates the lightlevel and applies raycasting if necassary
+CALL on !!Server!! on !!every frame!!
+**/
+func (w *World) DowndateLights(count int) {
+	w.Structure.DowndateLightLevel(1, count)
+	w.Structure.UpdateAllLightsIfNecassary()
+}
 
 /**
 Updates all chunks around all players with the specified delta of the world
@@ -218,7 +231,7 @@ func (w *World) UpdatePlayerChunks(Players []*Player) {
 		x, y := player.IntPos()
 		pos[i] = [2]int{int(x), int(y)}
 	}
-	changedEntities := w.UpdateChunks(w.ChunkUpdateRange, pos...)
+	changedEntities := w.UpdateChunks(int(w.ChunkUpdateRange.GetByte()), pos...)
 	w.ReAssignEntities(changedEntities)
 }
 

@@ -13,27 +13,27 @@ import (
 )
 const (
 	CREATURE_ANIM_STANDARD  = "idle_L"
-	CREATURE_ANIM_IDLE_L    = 0
-	CREATURE_ANIM_IDLE_R    = 1
-	CREATURE_ANIM_IDLE_U    = 2
-	CREATURE_ANIM_IDLE_D    = 3
-	CREATURE_ANIM_RUNNING_L = 4
-	CREATURE_ANIM_RUNNING_R = 5
-	CREATURE_ANIM_RUNNING_U = 6
-	CREATURE_ANIM_RUNNING_D = 7
+	CREATURE_ANIM_IDLE_L    = iota
+	CREATURE_ANIM_IDLE_R
+	CREATURE_ANIM_IDLE_U
+	CREATURE_ANIM_IDLE_D
+	CREATURE_ANIM_RUNNING_L
+	CREATURE_ANIM_RUNNING_R
+	CREATURE_ANIM_RUNNING_U
+	CREATURE_ANIM_RUNNING_D
 )
 const CREATURE_WOBJ = "#WOBJ"
 var ERR_WRONG_BYTE_LENGTH = errors.New("Wrong byte length")
 var ERR_UNKNOWN_ACTION = errors.New("Unknown Action")
 
-var (
-	ENTITY_START_MOVE = 				byte(0)
-	ENTITY_KEEP_MOVING = 				byte(1)
-	ENTITY_STOP_KEEP_MOVING =			byte(2)
-	ENTITY_CHANGE_ORIENTATION_LEFT = 	byte(3)
-	ENTITY_CHANGE_ORIENTATION_RIGHT = 	byte(4)
-	ENTITY_CHANGE_ORIENTATION_UP = 		byte(5)
-	ENTITY_CHANGE_ORIENTATION_DOWN = 	byte(6)
+const (
+	ENTITY_START_MOVE = byte(iota)
+	ENTITY_KEEP_MOVING
+	ENTITY_STOP_KEEP_MOVING
+	ENTITY_CHANGE_ORIENTATION_LEFT
+	ENTITY_CHANGE_ORIENTATION_RIGHT
+	ENTITY_CHANGE_ORIENTATION_UP
+	ENTITY_CHANGE_ORIENTATION_DOWN
 )
 
 type EntityUpdater interface {
@@ -62,7 +62,7 @@ type Entity struct {
 
 	factoryCreationId int16
 	
-	AppliedActions []byte
+	AppliedActions, MovementActionLog []byte
 
 	frame   *int
 	Updater EntityUpdater
@@ -74,7 +74,8 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 		return nil, ERR_WRONG_BYTE_LENGTH
 	}
 	fcID := int(cmp.BytesToInt16(data[16:18]))
-	e := cf.Get(fcID)
+	e, err := cf.Get(fcID)
+	if err != nil {return nil, err}
 	e.xPos = cmp.BytesToInt64(data[0:8])
 	e.yPos = cmp.BytesToInt64(data[8:16])
 	return e, nil
@@ -128,7 +129,7 @@ func (e *Entity) ApplyAction(ac []byte) error {
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
 	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
-		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.AppliedActions, e.frame, e.Updater}
+		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.AppliedActions, e.MovementActionLog, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
 		if anim != nil {
@@ -289,6 +290,16 @@ func (e *Entity) KeepsMoving() bool {
 }
 func (e *Entity) IntPos() (int64, int64) {
 	return e.xPos, e.yPos
+}
+func (e *Entity) GetPosDelta() (byte, byte) {
+	dx,dy,_ := e.GetPos()
+	rx := dx-float64(e.xPos);ry := dy-float64(e.yPos)
+	return byte(rx*255), byte(ry*255)
+}
+func (e *Entity) SetPosDelta(x,y int, bdx, bdy byte) {
+	rx := float64(bdx)/255;ry := float64(bdy)/255
+	e.SetMiddleTo(float64(x)+rx, float64(y)+ry)
+	e.setIntPos()
 }
 func (e *Entity) RegiserUpdateFunc(u EntityUpdater) {
 	e.Updater = u
