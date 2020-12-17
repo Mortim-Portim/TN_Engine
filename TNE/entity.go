@@ -62,7 +62,7 @@ type Entity struct {
 
 	factoryCreationId int16
 	
-	AppliedActions, MovementActionLog []byte
+	//AppliedActions, MovementActionLog []byte
 
 	frame   *int
 	Updater EntityUpdater
@@ -87,6 +87,8 @@ func (e *Entity) GetCreationData() (bs []byte) {
 	copy(bs[16:18], cmp.Int16ToBytes(e.factoryCreationId))
 	return
 }
+/**
+!!Deprecated!!
 func (e *Entity) ResetAppliedActions() {
 	e.AppliedActions = make([]byte, 0)
 }
@@ -126,10 +128,11 @@ func (e *Entity) ApplyAction(ac []byte) error {
 	}
 	return nil
 }
+**/
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
 	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
-		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.AppliedActions, e.MovementActionLog, e.frame, e.Updater}
+		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
 		if anim != nil {
@@ -174,7 +177,7 @@ func (e *Entity) Move(length, frames int) {
 	if e.isMoving {
 		return
 	}
-	e.AppliedActions = append(e.AppliedActions, []byte{ENTITY_START_MOVE, byte(length), byte(frames)}...)
+	//e.AppliedActions = append(e.AppliedActions, []byte{ENTITY_START_MOVE, byte(length), byte(frames)}...)
 	e.isMoving = true
 	e.movingFrames = frames
 	e.movedFrames = 0
@@ -210,16 +213,16 @@ func (e *Entity) ChangeOrientation(newO uint8) {
 		} else {
 			e.orientation = newO
 		}
-		switch newO {
-			case 0:
-				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_LEFT)
-			case 1:
-				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_RIGHT)
-			case 2:
-				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_UP)
-			case 3:
-				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_DOWN)
-		}
+//		switch newO {
+//			case 0:
+//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_LEFT)
+//			case 1:
+//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_RIGHT)
+//			case 2:
+//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_UP)
+//			case 3:
+//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_DOWN)
+//		}
 	}
 }
 
@@ -277,11 +280,11 @@ func (e *Entity) IsMoving() bool {
 }
 func (e *Entity) KeepMoving(mv bool) {
 	if mv != e.keepMoving {
-		ac := ENTITY_KEEP_MOVING
-		if !mv {
-			ac = ENTITY_STOP_KEEP_MOVING
-		}
-		e.AppliedActions = append(e.AppliedActions, ac)
+//		ac := ENTITY_KEEP_MOVING
+//		if !mv {
+//			ac = ENTITY_STOP_KEEP_MOVING
+//		}
+//		e.AppliedActions = append(e.AppliedActions, ac)
 		e.keepMoving = mv
 	}
 }
@@ -353,7 +356,7 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 		e.anims = append(e.anims, anim)
 	}
 	e.setIntPos()
-	e.ResetAppliedActions()
+	//e.ResetAppliedActions()
 	return e, nil
 }
 

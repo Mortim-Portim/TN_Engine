@@ -5,7 +5,7 @@ import (
 	//"github.com/hajimehoshi/ebiten"
 	"errors"
 
-	cmp "github.com/mortim-portim/GraphEng/Compression"
+	//cmp "github.com/mortim-portim/GraphEng/Compression"
 )
 
 const CHUNK_SIZE = 16
@@ -127,28 +127,28 @@ returns changes as []byte
 change -> create -> remove
 **/
 func (c *Chunk) GetDelta() (bs []byte) {
-	bs = append([]byte{byte(len(c.createdEntities)), byte(len(c.removedEntities))}, c.removedEntities...)
-	entChngs := make([][]byte, 0)
-	for i,ent := range(c.entities) {
-		chngs := ent.GetDelta()
-		if len(chngs) > 0 {
-			entChngs = append(entChngs, append([]byte{byte(i)}, chngs...))
-			ent.ResetAppliedActions()
-		}
-	}
-	bs = append(bs, cmp.Merge(entChngs, c.createdEntities...)...)
-	
-	for _,crBs := range(c.createdEntities) {
-		c.AddEntityFromCreationData(crBs)
-	}
-	for _,entI := range(c.removedEntities) {
-		c.entities[int(entI)] = nil
-	}
-	c.RemoveNilLocal()
-	
-	c.changes = make([]int, 0)
-	c.createdEntities = make([][]byte, 0)
-	c.removedEntities = make([]byte, 0)
+//	bs = append([]byte{byte(len(c.createdEntities)), byte(len(c.removedEntities))}, c.removedEntities...)
+//	entChngs := make([][]byte, 0)
+//	for i,ent := range(c.entities) {
+//		chngs := ent.GetDelta()
+//		if len(chngs) > 0 {
+//			entChngs = append(entChngs, append([]byte{byte(i)}, chngs...))
+//			ent.ResetAppliedActions()
+//		}
+//	}
+//	bs = append(bs, cmp.Merge(entChngs, c.createdEntities...)...)
+//	
+//	for _,crBs := range(c.createdEntities) {
+//		c.AddEntityFromCreationData(crBs)
+//	}
+//	for _,entI := range(c.removedEntities) {
+//		c.entities[int(entI)] = nil
+//	}
+//	c.RemoveNilLocal()
+//	
+//	c.changes = make([]int, 0)
+//	c.createdEntities = make([][]byte, 0)
+//	c.removedEntities = make([]byte, 0)
 	return
 }
 
@@ -156,27 +156,27 @@ func (c *Chunk) GetDelta() (bs []byte) {
 sets changes
 **/
 func (c *Chunk) SetDelta(bs []byte) {
-	createdL := int(bs[0])
-	rems := int(bs[1])
-	lengths := GetSliceOfVal(createdL, ENTITY_CREATION_DATA_LENGTH)
-	bs = bs[2:]
-	removed := bs[:rems]; bs = bs[rems:]
-	createdAndChanges := cmp.Demerge(bs, lengths)
-	created := createdAndChanges[:createdL]
-	changes := createdAndChanges[createdL:]
-	
-	for _,chngs := range(changes) {
-		idx := int(chngs[0])
-		c.entities[idx].SetDelta(chngs[1:])
-	}
-	
-	for _,crBs := range(created) {
-		c.AddEntityFromCreationData(crBs)
-	}
-	for _,entI := range(removed) {
-		c.entities[int(entI)] = nil
-	}
-	c.RemoveNilLocal()
+//	createdL := int(bs[0])
+//	rems := int(bs[1])
+//	lengths := GetSliceOfVal(createdL, ENTITY_CREATION_DATA_LENGTH)
+//	bs = bs[2:]
+//	removed := bs[:rems]; bs = bs[rems:]
+//	createdAndChanges := cmp.Demerge(bs, lengths)
+//	created := createdAndChanges[:createdL]
+//	changes := createdAndChanges[createdL:]
+//	
+//	for _,chngs := range(changes) {
+//		idx := int(chngs[0])
+//		c.entities[idx].SetDelta(chngs[1:])
+//	}
+//	
+//	for _,crBs := range(created) {
+//		c.AddEntityFromCreationData(crBs)
+//	}
+//	for _,entI := range(removed) {
+//		c.entities[int(entI)] = nil
+//	}
+//	c.RemoveNilLocal()
 }
 
 //Returns the relative position of a entity in a chunk

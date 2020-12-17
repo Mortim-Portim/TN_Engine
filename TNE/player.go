@@ -18,15 +18,8 @@ func (p *Player) GetCreationData() (bs []byte) {
 	
 	return
 }
-func (p *Player) SetByCreationData(bs []byte) {
-	
-}
-func (p *Player) GetDelta() (bs []byte) {
-	
-	return
-}
-func (p *Player) SetDelta(bs []byte) {
-	
+func GetPlayerByCreationData(bs []byte) (error, *Player) {
+	return nil, nil
 }
 func (p *Player) Copy() (p2 *Player) {
 	p2 = &Player{Race:*p.Race.Copy()}

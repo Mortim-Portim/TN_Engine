@@ -15,7 +15,7 @@ const(
 const (
 	SYNCVARS_PER_ENTITY = 6
 	SYNCENTITIES_PREP = 100
-	SYNCVARS_PER_PLAYER = 6
+	SYNCVARS_PER_PLAYER = 7
 	SYNCPLAYER_PREP =	 10
 	
 	ADDITIONAL_SYNCVARS = 0
@@ -44,13 +44,13 @@ type SyncEntity struct {
 func (se *SyncEntity) HasEntity() bool {
 	return se.Entity != nil
 }
-
-func (se *SyncEntity) Update(w *World) {
+//Server !ONLY!
+func (se *SyncEntity) Update() {
 	if se.HasEntity() {
-		se.Entity.UpdateAll(w)
 		se.UpdateVarsFromEnt()
 	}
 }
+//Server !ONLY!
 func (se *SyncEntity) SetEntity(e *Entity) error {
 	if e == nil {
 		return fmt.Errorf(ERR_ENTITY_IS_NIL, e)
