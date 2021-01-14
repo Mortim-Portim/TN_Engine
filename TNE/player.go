@@ -1,6 +1,7 @@
 package TNE
 
 import (
+	"github.com/mortim-portim/GraphEng/GE"
 	//"fmt"
 	//"math"
 )
@@ -13,6 +14,9 @@ func GetPlayer() *Player {
 }
 type Player struct {
 	Race
+}
+func (p *Player) Move() {
+	p.Entity.Move(1,10)
 }
 func (p *Player) GetCreationData() (bs []byte) {
 	
@@ -27,15 +31,15 @@ func (p *Player) Copy() (p2 *Player) {
 }
 //SHOULD update the player
 func (p *Player) Update(w *World) {
-	p.Race.UpdateAll(w)
+	p.Entity.UpdateAll(w)
 }
 //moves the world to the players position
-func (p *Player) MoveWorld(w *World) {
+func (p *Player) MoveWorld(w *GE.WorldStructure) {
 	xip, yip := p.IntPos()
-	xiw, yiw := w.Structure.Middle()	
+	xiw, yiw := w.Middle()	
 	ent := p.Race.Entity
 	if ent.IsMoving() || xip != int64(xiw) || yip != int64(yiw) {
 		pX, pY, _ := p.GetPos()
-		w.Structure.SetMiddleSmooth(pX-0.5, pY-0.5)
+		w.SetMiddleSmooth(pX-0.5, pY-0.5)
 	}
 }

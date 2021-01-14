@@ -1,9 +1,10 @@
 package TNE
 
 import (
+	ws "github.com/gorilla/websocket"
 	"github.com/mortim-portim/GameConn/GC"
+	"github.com/mortim-portim/GraphEng/GE"
 	"fmt"
-	
 )
 
 const (
@@ -21,19 +22,45 @@ const (
 type SyncPlayer struct {
 	*Player
 	se *SyncEntity
+	ACIDStart int
 	
 	Channel *GC.SyncString
+	
+	OnNewPlayer func(se interface{}, oldE, newE GE.Drawable)
 }
-
+func (sp *SyncPlayer) HasPlayer() bool {
+	return sp.Player != nil
+}
+//Sets the player and syncronizes it, i
+func (sp *SyncPlayer) SetPlayer(pl *Player) error {
+	oldE := sp.Player
+	if pl == nil {
+		sp.SetNilPlayer()
+		return fmt.Errorf(ERR_ENTITY_IS_NIL, pl)
+	}
+	sp.Player = pl
+	sp.CreateVarsFromPlayer()
+	sp.OnNewPlayer(sp, oldE, sp.Player)
+	return nil
+}
+func (sp *SyncPlayer) SetNilPlayer() {
+	oldE := sp.Player
+	sp.Player = nil
+	sp.OnNewPlayer(sp, oldE, sp.Player)
+}
+//Is called when the channel receives
 func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 	err, mt, _ := sp.GetFromChannel()
 	if err != nil {panic(err)}
 	switch mt {
 		case SYNCPLAYER_CREATION:
 			sp.CreatePlayerFromVars()
+			break;
 	}
 }
+//tries to build the entity and the player from the creation data that should be in the channel
 func (sp *SyncPlayer) CreatePlayerFromVars() error {
+	oldE := sp.Player
 	err := sp.se.CreateEntFromVars()
 	if err != nil {return err}
 	err, mt, data := sp.GetFromChannel()
@@ -42,25 +69,27 @@ func (sp *SyncPlayer) CreatePlayerFromVars() error {
 		return fmt.Errorf(ERR_SYNCPLAYER_CREATION, mt, data)
 	}
 	err, sp.Player = GetPlayerByCreationData(data)
+	sp.OnNewPlayer(sp, oldE, sp.Player)
 	return err
 }
+//tries to transfer the entity and send the creation data to the channel
 func (sp *SyncPlayer) CreateVarsFromPlayer() error {
 	err := sp.se.SetEntity(&sp.Player.Race.Entity)
 	if err != nil {return err}
 	sp.SendToChannel(SYNCPLAYER_CREATION, sp.Player.GetCreationData())
 	return nil
 }
-func (sp *SyncPlayer) SetPlayer(pl *Player) error {
-	if pl == nil {
-		return fmt.Errorf(ERR_ENTITY_IS_NIL, pl)
-	}
-	sp.Player = pl
-	sp.CreateVarsFromPlayer()
-	return nil
+func (sp *SyncPlayer) UpdatePlayerFromVars() {
+	sp.se.UpdateEntFromVars()
 }
+func (sp *SyncPlayer) UpdateVarsFromPlayer() {
+	sp.se.UpdateVarsFromEnt()
+}
+//Sends the msg as message type msgT to the syncchannel
 func (sp *SyncPlayer) SendToChannel(msgT byte, msg []byte) {
 	sp.Channel.SetBs(append([]byte{msgT}, msg...))
 }
+//Returns the message type, message int the syncchannel
 func (sp *SyncPlayer) GetFromChannel() (error, byte, []byte) {
 	data := sp.Channel.GetBs()
 	if len(data) < 1 {
@@ -68,40 +97,25 @@ func (sp *SyncPlayer) GetFromChannel() (error, byte, []byte) {
 	}
 	return nil, data[0], data[1:]
 }
-//func GetNewSyncEntity(ACIDStart int, ef *EntityFactory) (se *SyncEntity) {
-//	se = &SyncEntity{
-//		ef:ef,
-//		ACIDStart:ACIDStart,
-//		X:GC.CreateSyncUInt16(0),
-//		Y:GC.CreateSyncUInt16(0),
-//		fcID:GC.CreateSyncUInt16(0),
-//		Dx:GC.CreateSyncByte(0),
-//		Dy:GC.CreateSyncByte(0),
-//		extraData:GC.CreateSyncString(""),
-//	}
-//	return
-//}
-//func (se *SyncEntity) RegisterSyncVars(m *GC.ServerManager) {
-//	m.RegisterSyncVarToAllClients(se.X, 		se.ACIDStart+0)
-//	m.RegisterSyncVarToAllClients(se.Y, 		se.ACIDStart+1)
-//	m.RegisterSyncVarToAllClients(se.fcID, 		se.ACIDStart+2)
-//	m.RegisterSyncVarToAllClients(se.Dx, 		se.ACIDStart+3)
-//	m.RegisterSyncVarToAllClients(se.Dy, 		se.ACIDStart+4)
-//	m.RegisterSyncVarToAllClients(se.extraData, se.ACIDStart+5)
-//}
-//func (se *SyncEntity) GetRegisterdSyncVars(m *GC.ClientHandler) {
-//	se.X = 			m.SyncvarsByACID[se.ACIDStart+0].(*GC.SyncUInt16)
-//	se.Y = 			m.SyncvarsByACID[se.ACIDStart+1].(*GC.SyncUInt16)
-//	se.fcID = 		m.SyncvarsByACID[se.ACIDStart+2].(*GC.SyncUInt16)
-//	se.Dx = 		m.SyncvarsByACID[se.ACIDStart+3].(*GC.SyncByte)
-//	se.Dy = 		m.SyncvarsByACID[se.ACIDStart+4].(*GC.SyncByte)
-//	se.extraData =	m.SyncvarsByACID[se.ACIDStart+5].(*GC.SyncString)
-//}
-//func (se *SyncEntity) RegisterOnChange(m *GC.ClientHandler) {
-//	m.RegisterOnChangeFunc(se.ACIDStart+0, se.OnXChange)
-//	m.RegisterOnChangeFunc(se.ACIDStart+1, se.OnYChange)
-//	m.RegisterOnChangeFunc(se.ACIDStart+2, se.OnfcIDChange)
-//	m.RegisterOnChangeFunc(se.ACIDStart+3, se.OnxdChange)
-//	m.RegisterOnChangeFunc(se.ACIDStart+4, se.OnydChange)
-//	m.RegisterOnChangeFunc(se.ACIDStart+5, se.OnextraDataChange)
-//}
+//Returns an emtpy new SyncPlayer struct, that can build its own player the EntityFactory and Creation data
+func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory) (sp *SyncPlayer) {
+	sp = &SyncPlayer{
+		ACIDStart:ACIDStart,
+		se:GetNewSyncEntity(ACIDStart+1, ef),
+		Channel:GC.CreateSyncString(""),
+	}
+	return
+}
+
+func (sp *SyncPlayer) RegisterSyncVars(m *GC.ServerManager, clients ...*ws.Conn) {
+	sp.se.RegisterSyncVars(m, clients...)
+	m.RegisterSyncVar(sp.Channel, sp.ACIDStart, clients...)
+}
+func (sp *SyncPlayer) GetRegisterdSyncVars(m *GC.ClientManager) {
+	sp.se.GetRegisterdSyncVars(m)
+	sp.Channel = 			m.SyncvarsByACID[sp.ACIDStart].(*GC.SyncString)
+}
+func (sp *SyncPlayer) RegisterOnChange(m GC.Handler) {
+	sp.se.RegisterOnChange(m)
+	m.RegisterOnChangeFunc(sp.ACIDStart, sp.OnChannelChange)
+}

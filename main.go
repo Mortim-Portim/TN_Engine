@@ -46,28 +46,28 @@ func (g *TestGame) Update(screen *ebiten.Image) error {
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
 		g.character.ChangeOrientation(0)
 		if GE.IsKeyJustDown(ebiten.KeyA) {
-			g.character.Move(1, FPS/6)
+			g.character.Entity.Move(1, FPS/6)
 		}
 		moving = true
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
 		g.character.ChangeOrientation(1)
 		if GE.IsKeyJustDown(ebiten.KeyD) {
-			g.character.Move(1, FPS/6)
+			g.character.Entity.Move(1, FPS/6)
 		}
 		moving = true
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
 		g.character.ChangeOrientation(2)
 		if GE.IsKeyJustDown(ebiten.KeyW) {
-			g.character.Move(1, FPS/6)
+			g.character.Entity.Move(1, FPS/6)
 		}
 		moving = true
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
 		g.character.ChangeOrientation(3)
 		if GE.IsKeyJustDown(ebiten.KeyS) {
-			g.character.Move(1, FPS/6)
+			g.character.Entity.Move(1, FPS/6)
 		}
 		moving = true
 	}

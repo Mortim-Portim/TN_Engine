@@ -16,7 +16,7 @@ func GetWorld(X, Y, W, H float64, tW, tH, cW, cH, ChunkUpdateRange int, CF *Enti
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
-	w = &World{Path: path, FrameCounter: frameCounter, CF: CF, ActivePlayerChunk: -1}
+	w = &World{Path: path, FrameCounter: frameCounter, CF: CF, ActivePlayerChunk: -1, EntityChunkChange: true}
 	w.Players = make([]*Player, 0)
 
 	done := make(chan bool)
@@ -28,7 +28,8 @@ func GetWorld(X, Y, W, H float64, tW, tH, cW, cH, ChunkUpdateRange int, CF *Enti
 			for y := 0; y < w.ChunkMat.HAbs(); y++ {
 				idx, err := w.ChunkMat.Get(x, y)
 				GE.ShitImDying(err)
-				w.Chunks[idx] = GetChunk(x, y, CF, fmt.Sprintf("%stmp/%v-%v.chunk", path, x, y))
+				w.Chunks[idx] = GetChunk(x, y)
+				//w.Chunks[idx] = GetChunk(x, y, CF, fmt.Sprintf("%stmp/%v-%v.chunk", path, x, y))
 			}
 		}
 		done <- true
@@ -69,6 +70,8 @@ type World struct {
 	ActivePlayer, ActivePlayerChunk int
 	//If the current player changes position or is replaced
 	ActivePlayerChange bool
+	//If any entity changes into any of the chunks around the active players
+	EntityChunkChange bool
 
 	CF *EntityFactory
 
@@ -94,14 +97,7 @@ func (w *World) Print() (out string) {
 }
 
 /**
-  _
- /  | o  _  ._ _|_
- \_ | | (/_ | | |_
-
-**/
-/**
 Sets the player that the world is drawn for and that is Updated
-CALL on !!Client!!
 **/
 func (w *World) SetActivePlayer(playerIdx int) error {
 	//fmt.Printf("Setting new active player: %v\n", playerIdx)
@@ -109,23 +105,19 @@ func (w *World) SetActivePlayer(playerIdx int) error {
 		return ERR_UNKNOWN_PLAYER
 	}
 	w.Structure.Add_Drawables.Remove(w.Players[w.ActivePlayer])
-	w.Structure.AddDrawable(w.Players[playerIdx])
+	w.Structure.Add_Drawables.Add(w.Players[playerIdx])
 	w.ActivePlayer = playerIdx
 	w.ActivePlayerChange = true
 	return nil
 }
 /**
 Draws the surroundings of the active player
-CALL on !!Client!! on !!every frame!!
 **/
 func (w *World) Draw(screen *ebiten.Image) {
 	w.Structure.Draw(screen)
 }
-
-//-------------------------------------------------------------------------------------------------------------------------------------
 /**
 Updates the active player
-CALL on !!Client!! on !!every frame!!
 **/
 func (w *World) UpdateActivePlayer() {
 	w.ActivePlayerChange = false
@@ -139,18 +131,17 @@ func (w *World) UpdateActivePlayer() {
 
 /**
 The active player moves the worldstructure if necassary
-and if the active player changes the chunk the drawn entities are updated
-CALL on !!Client!! on !!every frame!!
+and if the active player or a nearby entity changed the chunk the drawn entities are updated
 **/
 func (w *World) UpdateDrawables() {
 	activePlayer := w.Players[w.ActivePlayer]
-	activePlayer.MoveWorld(w)
-	if w.ActivePlayerChange {
+	activePlayer.MoveWorld(w.Structure)
+	if w.ActivePlayerChange || w.EntityChunkChange {
 		x, y := activePlayer.IntPos()
 		cX, cY := GetChunkOfTile(int(x), int(y))
 		idx, err := w.ChunkMat.Get(cX, cY)
 		if err == nil {
-			if int(idx) != w.ActivePlayerChunk {
+			if int(idx) != w.ActivePlayerChunk || w.EntityChunkChange {
 				w.Structure.Add_Drawables.Clear()
 				w.Structure.AddDrawable(w.Players[w.ActivePlayer])
 				w.AddEntitiesToDrawables(w.Structure.Add_Drawables, cX, cY)
@@ -161,69 +152,46 @@ func (w *World) UpdateDrawables() {
 }
 /**
 Updates the world structures obj, if the player moved
-CALL on !!Client!! on !!every frame!!
 **/
 func (w *World) UpdateWorldStructure() {
-	if w.ActivePlayerChange {
+	if w.ActivePlayerChange || w.EntityChunkChange {
 		w.Structure.UpdateObjDrawables()
 	}
 }
 
-//-------------------------------------------------------------------------------------------------------------------------------------
-/**
-  __
- (_   _  ._    _  ._
- __) (/_ | \/ (/_ |
-
-**/
 /**
 Adds a entity to a chunk given by the coords cX, cY
-CALL on !!Server!!
 **/
 func (w *World) AddEntity(cX, cY int, e *Entity) error {
 	idx, err := w.ChunkMat.Get(cX, cY)
 	if err != nil {
 		return err
 	}
-	return w.Chunks[idx].AddEntity(e)
+	return w.Chunks[idx].Add(e)
 }
 /**
 SHOULD remove a player by his name
-CALL on !!Server!!
 **/
 func (w *World) RemovePlayer(name string) {
 
 }
 /**
 Adds a player
-CALL on !!Server!!
 **/
 func (w *World) AddPlayer(p *Player) {
 	w.Players = append(w.Players, p)
 }
-
-//-------------------------------------------------------------------------------------------------------------------------------------
 /**
 Updates the lightlevel and applies raycasting if necassary
-CALL on !!Server!! on !!every frame!!
 **/
 func (w *World) UpdateLights() {
 	w.Structure.UpdateLightLevel(1)
-	w.Structure.UpdateAllLightsIfNecassary()
-}
-/**
-Downdates the lightlevel and applies raycasting if necassary
-CALL on !!Server!! on !!every frame!!
-**/
-func (w *World) DowndateLights(count int) {
-	w.Structure.DowndateLightLevel(1, count)
 	w.Structure.UpdateAllLightsIfNecassary()
 }
 
 /**
 Updates all chunks around all players with the specified delta of the world
 calls UpdateChunks and ReAssignEntities
-CALL on !!Server!! on !!every frame!!
 **/
 func (w *World) UpdatePlayerChunks(Players []*Player) {
 	pos := make([][2]int, len(Players))
@@ -260,7 +228,7 @@ func (w *World) ReAssignEntities(ents []*Entity) {
 		cX, cY := GetChunkOfTile(int(x), int(y))
 		idx, err := w.ChunkMat.Get(cX, cY)
 		if err == nil {
-			w.Chunks[idx].AddEntityLocal(ent)
+			w.Chunks[idx].Add(ent)
 		}
 	}
 }
@@ -271,24 +239,17 @@ called by !!UpdatePlayerChunks!!
 **/
 func (w *World) UpdateChunks(chunkRange int, plXYChunkR ...[2]int) (allRems []*Entity) {
 	allRems = make([]*Entity, 0)
-	done := make(chan bool)
 	for _, posTs := range plXYChunkR {
-		go func() {
-			x, y := GetChunkOfTile(posTs[0], posTs[1])
-			for _, delta := range CHUNK_DELTAS[chunkRange] {
-				idx, err := w.ChunkMat.Get(x+delta[0], y+delta[1])
-				if err == nil {
-					if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
-						w.Chunks[idx].LastUpdateFrame = *w.FrameCounter
-						allRems = append(allRems, w.Chunks[idx].Update(w)...)
-					}
+		x, y := GetChunkOfTile(posTs[0], posTs[1])
+		for _, delta := range CHUNK_DELTAS[chunkRange] {
+			idx, err := w.ChunkMat.Get(x+delta[0], y+delta[1])
+			if err == nil {
+				if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
+					w.Chunks[idx].LastUpdateFrame = *w.FrameCounter
+					allRems = append(allRems, w.Chunks[idx].UpdateEntities(w)...)
 				}
 			}
-			done <- true
-		}()
-	}
-	for i := 0; i < len(plXYChunkR); i++ {
-		<-done
+		}
 	}
 	return
 }
