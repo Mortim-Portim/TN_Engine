@@ -40,18 +40,24 @@ func (sp *SyncPlayer) SetPlayer(pl *Player) error {
 	}
 	sp.Player = pl
 	sp.CreateVarsFromPlayer()
-	sp.OnNewPlayer(sp, oldE, sp.Player)
+	if sp.OnNewPlayer != nil {
+		sp.OnNewPlayer(sp, oldE, sp.Player)
+	}
 	return nil
 }
 func (sp *SyncPlayer) SetNilPlayer() {
 	oldE := sp.Player
 	sp.Player = nil
-	sp.OnNewPlayer(sp, oldE, sp.Player)
+	if sp.OnNewPlayer != nil {
+		sp.OnNewPlayer(sp, oldE, sp.Player)
+	}
 }
 //Is called when the channel receives
 func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 	err, mt, _ := sp.GetFromChannel()
-	if err != nil {panic(err)}
+	if err != nil {
+		return
+	}
 	switch mt {
 		case SYNCPLAYER_CREATION:
 			sp.CreatePlayerFromVars()
@@ -60,7 +66,7 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 }
 //tries to build the entity and the player from the creation data that should be in the channel
 func (sp *SyncPlayer) CreatePlayerFromVars() error {
-	oldE := sp.Player
+	//oldE := sp.Player
 	err := sp.se.CreateEntFromVars()
 	if err != nil {return err}
 	err, mt, data := sp.GetFromChannel()
@@ -69,7 +75,7 @@ func (sp *SyncPlayer) CreatePlayerFromVars() error {
 		return fmt.Errorf(ERR_SYNCPLAYER_CREATION, mt, data)
 	}
 	err, sp.Player = GetPlayerByCreationData(data)
-	sp.OnNewPlayer(sp, oldE, sp.Player)
+	//sp.OnNewPlayer(sp, oldE, sp.Player)
 	return err
 }
 //tries to transfer the entity and send the creation data to the channel
@@ -106,7 +112,10 @@ func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory) (sp *SyncPlayer) {
 	}
 	return
 }
-
+func (sp *SyncPlayer) GetSyncVars(mp map[int]GC.SyncVar) {
+	sp.se.GetSyncVars(mp)
+	mp[sp.ACIDStart] = sp.Channel
+}
 func (sp *SyncPlayer) RegisterSyncVars(m *GC.ServerManager, clients ...*ws.Conn) {
 	sp.se.RegisterSyncVars(m, clients...)
 	m.RegisterSyncVar(sp.Channel, sp.ACIDStart, clients...)

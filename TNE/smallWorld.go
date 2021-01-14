@@ -35,6 +35,30 @@ func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path strin
 	}
 	return
 }
+func (sm *SmallWorld) New() (sm2 *SmallWorld) {
+	sm2 = &SmallWorld{Ents:make([]*SyncEntity, SYNCENTITIES_PREP),
+					 Plys:make([]*SyncPlayer, SYNCPLAYER_PREP),
+					 SyncFrame:GC.CreateSyncInt64(0),
+					 SyncLightLevel:GC.CreateSyncInt16(0),
+					 WorldChan:GC.CreateSyncString(""),
+					 Ef:sm.Ef,X:sm.X,Y:sm.Y,W:sm.W,H:sm.H,tile_path:sm.tile_path,struct_path:sm.struct_path,
+					 FrameCounter:sm.FrameCounter,
+					 ActivePlayer:GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef),
+					 Struct:sm.Struct,
+	}
+	for i,_ := range(sm2.Ents) {
+		sm2.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), sm.Ef)
+	}
+	for i,_ := range(sm2.Plys) {
+		sm2.Plys[i] = GetNewSyncPlayer(GetSVACID_Start_OtherPlayer(i), sm.Ef)
+	}
+	return
+}
+func (sm *SmallWorld) Clear() {
+	sm.Ents = make([]*SyncEntity, SYNCENTITIES_PREP)
+	sm.Plys = make([]*SyncPlayer, SYNCPLAYER_PREP)
+	sm.ActivePlayer = GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef)
+}
 type SmallWorld struct {
 	X,Y,W,H float64
 	tile_path, struct_path string
@@ -135,22 +159,27 @@ func (sm *SmallWorld) OnFrameChange(sv GC.SyncVar, id int) {
 	*sm.FrameCounter = int(sm.SyncFrame.GetInt())
 }
 func (sm *SmallWorld) OnLightLevelChange(sv GC.SyncVar, id int) {
-	sm.Struct.SetLightLevel(sm.SyncLightLevel.GetInt())
+	if sm.HasWorldStruct() {
+		sm.Struct.SetLightLevel(sm.SyncLightLevel.GetInt())
+	}
 }
 func (sm *SmallWorld) Register(m *GC.ServerManager, clients ...*ws.Conn) {
-	sm.ActivePlayer.RegisterSyncVars(m, clients...)
+	AllSVs := make(map[int]GC.SyncVar)
+	
+	sm.ActivePlayer.GetSyncVars(AllSVs)
 	for _,e := range(sm.Ents) {
-		e.RegisterSyncVars(m, clients...)
+		e.GetSyncVars(AllSVs)
 		//e.RegisterOnChange(m)
 	}
 	for _,p := range(sm.Plys) {
-		p.RegisterSyncVars(m, clients...)
+		p.GetSyncVars(AllSVs)
 		//p.RegisterOnChange(m)
 	}
-	m.RegisterSyncVar(sm.SyncFrame, WorldFrameChan_ACID, clients...)
-	m.RegisterSyncVar(sm.SyncLightLevel, WorldLightLevelChan_ACID, clients...)
-	m.RegisterSyncVar(sm.WorldChan, WorldStructChan_ACID, clients...)
+	AllSVs[WorldFrameChan_ACID] = sm.SyncFrame
+	AllSVs[WorldLightLevelChan_ACID] = sm.SyncLightLevel
+	AllSVs[WorldStructChan_ACID] = sm.WorldChan
 	//m.RegisterOnChangeFunc(WorldChannel_ACID, []func(GC.SyncVar, int){sm.OnChannelChange}, clients...)
+	m.RegisterSyncVars(AllSVs, clients...)
 }
 func (sm *SmallWorld) GetRegistered(m *GC.ClientManager) {
 	sm.ActivePlayer.GetRegisterdSyncVars(m)

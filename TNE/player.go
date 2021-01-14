@@ -29,7 +29,7 @@ func (p *Player) Copy() (p2 *Player) {
 	p2 = &Player{Race:*p.Race.Copy()}
 	return
 }
-//SHOULD update the player
+//updates the player
 func (p *Player) Update(w *World) {
 	p.Entity.UpdateAll(w)
 }

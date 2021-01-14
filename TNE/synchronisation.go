@@ -7,6 +7,7 @@ import (
 	"github.com/mortim-portim/GraphEng/GE"
 	"fmt"
 )
+const NumberOfSVACIDs_Msg = "SVACIDs"
 
 const (
 	//amount of syncVars needed by one Entity
@@ -32,11 +33,14 @@ func GetSVACID_Start_OwnPlayer() int {
 }
 //Returns the startACID for the other player
 func GetSVACID_Start_OtherPlayer(idx int) int {
-	return GetSVACID_Start_OwnPlayer()+1+idx*SYNCVARS_PER_PLAYER
+	return GetSVACID_Start_OwnPlayer()+SYNCVARS_PER_PLAYER+idx*SYNCVARS_PER_PLAYER
 }
 //Returns the startACID for the entity
 func GetSVACID_Start_Entities(idx int) int {
 	return GetSVACID_Start_OtherPlayer(OTHERPLAYERS)+idx*SYNCVARS_PER_ENTITY
+}
+func GetSVACID_Count() int {
+	return GetSVACID_Start_Entities(SYNCENTITIES_PREP)-1
 }
 //Initializes the SyncClient
 func InitialSyncClient() {
@@ -81,13 +85,17 @@ func (se *SyncEntity) SetEntity(e *Entity) error {
 	se.Entity = e
 	se.UpdateVarsFromEnt()
 	se.fcID.SetInt(uint16(e.FactoryCreationID()))
-	se.OnNewEntity(se, oldE, se.Entity)
+	if se.OnNewEntity != nil {
+		se.OnNewEntity(se, oldE, se.Entity)
+	}
 	return nil
 }
 func (se *SyncEntity) SetNilEntity() {
 	oldE := se.Entity
 	se.Entity = nil
-	se.OnNewEntity(se, oldE, nil)
+	if se.OnNewEntity != nil {
+		se.OnNewEntity(se, oldE, nil)
+	}
 }
 //Called when the x-position syncVar changes
 func (se *SyncEntity) OnXChange(sv GC.SyncVar, id int) {
@@ -115,12 +123,12 @@ func (se *SyncEntity) OnfcIDChange(sv GC.SyncVar, id int) {
 }
 //Tries to create the Entity from the SyncVars
 func (se *SyncEntity) CreateEntFromVars() error {
-	oldE := se.Entity
+	//oldE := se.Entity
 	ent, err := se.ef.Get(int(se.fcID.GetInt()))
 	if err != nil {return err}
 	se.Entity = ent
 	se.UpdateEntFromVars()
-	se.OnNewEntity(se, oldE, se.Entity)
+	//se.OnNewEntity(se, oldE, se.Entity)
 	return nil
 }
 //Updates the SyncVars from the Entity if possible
@@ -151,6 +159,14 @@ func GetNewSyncEntity(ACIDStart int, ef *EntityFactory) (se *SyncEntity) {
 		extraData:GC.CreateSyncString(""),
 	}
 	return
+}
+func (se *SyncEntity) GetSyncVars(mp map[int]GC.SyncVar) {
+	mp[se.ACIDStart+0] = se.X
+	mp[se.ACIDStart+1] = se.Y
+	mp[se.ACIDStart+2] = se.fcID
+	mp[se.ACIDStart+3] = se.Dx
+	mp[se.ACIDStart+4] = se.Dy 		
+	mp[se.ACIDStart+5] = se.extraData
 }
 //Registers all syncVars to the server
 func (se *SyncEntity) RegisterSyncVars(m *GC.ServerManager, clients ...*ws.Conn) {
