@@ -5,6 +5,8 @@ import (
 	"github.com/mortim-portim/GraphEng/GE"
 	"github.com/mortim-portim/GameConn/GC"
 	"github.com/hajimehoshi/ebiten"
+	
+	"fmt"
 )
 
 /**
@@ -67,6 +69,7 @@ type SmallWorld struct {
 	Plys []*SyncPlayer
 	
 	ActivePlayer *SyncPlayer
+	newPlayer bool
 	
 	Struct *GE.WorldStructure
 	
@@ -75,6 +78,35 @@ type SmallWorld struct {
 	WorldChan *GC.SyncString
 	
 	FrameCounter *int
+}
+func (sm *SmallWorld) Print() (out string) {
+	out = fmt.Sprintf("SHOULD print information about the smallWorld")
+	return
+}
+func (sm *SmallWorld) HasNewActivePlayer() (bool, *Player) {
+	if sm.newPlayer {
+		sm.newPlayer = false
+		if sm.ActivePlayer.Player != nil {
+			return true, sm.ActivePlayer.Player
+		}
+	}
+	return false, nil
+}
+func (sm *SmallWorld) GetSyncPlayersFromWorld(w *World) error {
+	idx := 0
+	for _,pl := range(w.Players) {
+		if pl != sm.ActivePlayer.Player {
+			if pl != sm.Plys[idx].Player {
+				err := sm.Plys[idx].SetPlayer(pl)
+				if err != nil {return err}
+			}
+			idx ++
+		}
+	}
+	for i := idx; i < len(sm.Plys); i++ {
+		sm.Plys[idx].SetNilPlayer()
+	}
+	return nil
 }
 func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {
 	if wS != nil {
@@ -89,6 +121,7 @@ func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {
 }
 func (sm *SmallWorld) Draw(screen *ebiten.Image) {
 	sm.ActivePlayer.MoveWorld(sm.Struct)
+	sm.Struct.UpdateObjDrawables()
 	sm.Struct.Draw(screen)
 }
 func (sm *SmallWorld) UpdateVars() {
@@ -138,6 +171,10 @@ func (sm *SmallWorld) StandardOnEntityChange(se interface{}, oldE, newE GE.Drawa
 		}
 	}
 }
+func (sm *SmallWorld) OnActivePlayerChange(se interface{}, oldE, newE GE.Drawable) {
+	sm.newPlayer = true
+	sm.StandardOnEntityChange(se, oldE, newE)
+}
 func (sm *SmallWorld) RegisterOnEntityChangeListeners() {
 	for _,e := range(sm.Ents) {
 		e.OnNewEntity = sm.StandardOnEntityChange
@@ -145,25 +182,29 @@ func (sm *SmallWorld) RegisterOnEntityChangeListeners() {
 	for _,p := range(sm.Plys) {
 		p.OnNewPlayer = sm.StandardOnEntityChange
 	}
-	sm.ActivePlayer.OnNewPlayer = sm.StandardOnEntityChange
+	sm.ActivePlayer.OnNewPlayer = sm.OnActivePlayerChange
 }
 func (sm *SmallWorld) OnWorldChanChange(sv GC.SyncVar, id int) {
 	data := sm.WorldChan.GetBs()
-	wS,err := GE.GetWorldStructureFromBytes(sm.X, sm.Y, sm.W, sm.H, data, sm.tile_path, sm.struct_path)
-	if err != nil {
-		panic(err)
+	if len(data) > 0 {
+		wS,err := GE.GetWorldStructureFromBytes(sm.X, sm.Y, sm.W, sm.H, data, sm.tile_path, sm.struct_path)
+		if err != nil {
+			panic(err)
+		}
+		sm.Struct = wS
 	}
-	sm.Struct = wS
 }
 func (sm *SmallWorld) OnFrameChange(sv GC.SyncVar, id int) {
 	*sm.FrameCounter = int(sm.SyncFrame.GetInt())
+	//fmt.Println("FrameCounter Change: ", *sm.FrameCounter)
 }
 func (sm *SmallWorld) OnLightLevelChange(sv GC.SyncVar, id int) {
 	if sm.HasWorldStruct() {
 		sm.Struct.SetLightLevel(sm.SyncLightLevel.GetInt())
+		//fmt.Println("LightLevel Change: ", sm.SyncLightLevel.GetInt())
 	}
 }
-func (sm *SmallWorld) Register(m *GC.ServerManager, clients ...*ws.Conn) {
+func (sm *SmallWorld) Register(m *GC.ServerManager, client *ws.Conn) {
 	AllSVs := make(map[int]GC.SyncVar)
 	
 	sm.ActivePlayer.GetSyncVars(AllSVs)
@@ -179,7 +220,9 @@ func (sm *SmallWorld) Register(m *GC.ServerManager, clients ...*ws.Conn) {
 	AllSVs[WorldLightLevelChan_ACID] = sm.SyncLightLevel
 	AllSVs[WorldStructChan_ACID] = sm.WorldChan
 	//m.RegisterOnChangeFunc(WorldChannel_ACID, []func(GC.SyncVar, int){sm.OnChannelChange}, clients...)
-	m.RegisterSyncVars(AllSVs, clients...)
+	m.RegisterSyncVars(AllSVs, client)
+	sm.ActivePlayer.RegisterOnChange(m.Handler[client])
+	sm.ActivePlayer.OnNewPlayer = sm.OnActivePlayerChange
 }
 func (sm *SmallWorld) GetRegistered(m *GC.ClientManager) {
 	sm.ActivePlayer.GetRegisterdSyncVars(m)

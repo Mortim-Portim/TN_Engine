@@ -39,6 +39,15 @@ func (c *Chunk) Add(e *Entity) error {
 	}
 	return nil
 }
+func (c *Chunk) RemoveEntity(e *Entity) {
+	idx := -1
+	for i, e2 := range c.entities {
+		if e2 == e {idx = i}
+	}
+	if idx >= 0 {
+		c.RemoveEntityByIdx(idx)
+	}
+}
 func (c *Chunk) UpdateEntities(w *World) (removed []*Entity) {
 	removed = make([]*Entity, 0)
 	for idx, entity := range c.entities {
@@ -58,12 +67,12 @@ func (c *Chunk) RemoveNilEntities() {
 	rems := 0
 	for idx, _ := range c.entities {
 		if c.entities[idx-rems] == nil {
-			c.RemoveLocal(idx-rems)
+			c.RemoveEntityByIdx(idx-rems)
 			rems ++
 		}
 	}
 }
-func (c *Chunk) RemoveLocal(i int) {
+func (c *Chunk) RemoveEntityByIdx(i int) {
 	c.entities[i] = c.entities[len(c.entities)-1]
 	c.entities = c.entities[:len(c.entities)-1]
 }

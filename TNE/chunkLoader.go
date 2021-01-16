@@ -73,3 +73,7 @@ func GetChunkOfTile(x,y int) (xC, yC int) {
 	tilesDX := xWithoutDx/CHUNK_SIZE; tilesDY := yWithoutDy/CHUNK_SIZE
 	return int(tilesDX), int(tilesDY)
 }
+func GetChunkOfEntity(e *Entity) (xC, yC int) {
+	x,y := e.IntPos()
+	return GetChunkOfTile(int(x), int(y))
+}

@@ -27,13 +27,10 @@ var ERR_WRONG_BYTE_LENGTH = errors.New("Wrong byte length")
 var ERR_UNKNOWN_ACTION = errors.New("Unknown Action")
 
 const (
-	ENTITY_START_MOVE = byte(iota)
-	ENTITY_KEEP_MOVING
-	ENTITY_STOP_KEEP_MOVING
-	ENTITY_CHANGE_ORIENTATION_LEFT
-	ENTITY_CHANGE_ORIENTATION_RIGHT
-	ENTITY_CHANGE_ORIENTATION_UP
-	ENTITY_CHANGE_ORIENTATION_DOWN
+	ENTITY_ORIENTATION_LEFT = iota
+	ENTITY_ORIENTATION_RIGHT
+	ENTITY_ORIENTATION_UP
+	ENTITY_ORIENTATION_DOWN
 )
 
 type EntityUpdater interface {
@@ -173,7 +170,7 @@ func (e *Entity) Bounds() (float64, float64) {
 }
 
 //Initiates a move action with a specific lenght an duration
-func (e *Entity) Move(length, frames int) {
+func (e *Entity) Move(length float64, frames int) {
 	if e.isMoving {
 		return
 	}
@@ -181,23 +178,27 @@ func (e *Entity) Move(length, frames int) {
 	e.isMoving = true
 	e.movingFrames = frames
 	e.movedFrames = 0
-	e.movingStepSize = float64(length) / float64(frames)
+	e.movingStepSize = length / float64(frames)
 	e.neworientation = e.orientation
 }
 
 //Sets the middle of the Entity
 func (e *Entity) SetMiddleTo(x, y float64) {
-	e.WObj.SetPos(x, y)
+	e.WObj.SetMiddle(x, y)
 	e.setIntPos()
 }
-
 //Sets the top left corner of the Entity
 func (e *Entity) SetTopLeftTo(x, y float64) {
-	e.WObj.SetToXY(x, y)
+	e.WObj.SetTopLeft(x, y)
+	e.setIntPos()
+}
+//Sets the top left corner of the Entity
+func (e *Entity) SetBottomRightTo(x, y float64) {
+	e.WObj.SetBottomRight(x, y)
 	e.setIntPos()
 }
 func (e *Entity) setIntPos() {
-	xf, yf, _ := e.WObj.GetPos()
+	xf, yf, _ := e.WObj.GetMiddle()
 	x, y := int64(math.Round(xf-0.5)), int64(math.Round(yf-0.5))
 	if x != e.xPos || y != e.yPos {
 		e.xPos, e.yPos = x, y
@@ -207,22 +208,13 @@ func (e *Entity) setIntPos() {
 
 //Changes the orientation
 func (e *Entity) ChangeOrientation(newO uint8) {
-	if newO != e.orientation {
-		if e.isMoving {
-			e.neworientation = newO
-		} else {
+	if e.isMoving {
+		e.neworientation = newO
+	}else{
+		if newO != e.orientation {
 			e.orientation = newO
+			e.neworientation = newO
 		}
-//		switch newO {
-//			case 0:
-//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_LEFT)
-//			case 1:
-//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_RIGHT)
-//			case 2:
-//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_UP)
-//			case 3:
-//				e.AppliedActions = append(e.AppliedActions, ENTITY_CHANGE_ORIENTATION_DOWN)
-//		}
 	}
 }
 
@@ -237,16 +229,16 @@ func (e *Entity) UpdateOrientationAnim() {
 func (e *Entity) moveInDirection(dir uint8) {
 	dx, dy := 0.0, 0.0
 	switch dir {
-	case 0:
+	case ENTITY_ORIENTATION_LEFT:
 		dx = -e.movingStepSize
 		break
-	case 1:
+	case ENTITY_ORIENTATION_RIGHT:
 		dx = e.movingStepSize
 		break
-	case 2:
+	case ENTITY_ORIENTATION_UP:
 		dy = -e.movingStepSize
 		break
-	case 3:
+	case ENTITY_ORIENTATION_DOWN:
 		dy = e.movingStepSize
 		break
 	}
@@ -261,7 +253,13 @@ func (e *Entity) GetDrawBox() *GE.Rectangle {
 
 //Implements EntityI
 func (e *Entity) GetPos() (float64, float64, int8) {
-	return e.WObj.GetPos()
+	return e.WObj.GetMiddle()
+}
+func (e *Entity) GetTopLeft() (float64, float64) {
+	return e.WObj.GetTopLeft()
+}
+func (e *Entity) GetBottomRight() (float64, float64) {
+	return e.WObj.GetBottomRight()
 }
 func (e *Entity) FactoryCreationID() int16 {
 	return e.factoryCreationId
@@ -294,17 +292,17 @@ func (e *Entity) KeepsMoving() bool {
 func (e *Entity) IntPos() (int64, int64) {
 	return e.xPos, e.yPos
 }
-func (e *Entity) GetPosDelta() (byte, byte) {
-	dx,dy,_ := e.GetPos()
-	rx := dx-float64(e.xPos);ry := dy-float64(e.yPos)
-	return byte(rx*255), byte(ry*255)
+func (e *Entity) GetPosIntPBytes() (int, int, byte, byte) {
+	fx,fy := e.GetBottomRight()
+	x := math.Floor(fx); y := math.Floor(fy)
+	dx := fx-x; dy := fy-y
+	return int(x), int(y), byte(dx*255), byte(dy*255)
 }
-func (e *Entity) SetPosDelta(x,y int, bdx, bdy byte) {
-	rx := float64(bdx)/255;ry := float64(bdy)/255
-	e.SetMiddleTo(float64(x)+rx, float64(y)+ry)
-	e.setIntPos()
+func (e *Entity) SetPosIntPBytes(x,y int, bdx, bdy byte) {
+	dx := float64(bdx)/255;dy := float64(bdy)/255
+	e.SetBottomRightTo(float64(x)+dx, float64(y)+dy)
 }
-func (e *Entity) RegiserUpdateFunc(u EntityUpdater) {
+func (e *Entity) RegisterUpdateFunc(u EntityUpdater) {
 	e.Updater = u
 }
 func (e *Entity) SetAnim(idx int) {

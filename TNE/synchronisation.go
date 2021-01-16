@@ -56,6 +56,7 @@ const (
 // +-+-+-+-+-+-+-+-+-+-+
 type SyncEntity struct {
 	ACIDStart int
+	ACIDs []int
 	X,Y, fcID *GC.SyncUInt16
 	Dx,Dy *GC.SyncByte
 	extraData *GC.SyncString
@@ -64,6 +65,10 @@ type SyncEntity struct {
 	ef *EntityFactory
 	
 	OnNewEntity func(se interface{}, oldE, newE GE.Drawable)
+}
+
+func (se *SyncEntity) UpdateSyncVars(m GC.Handler) {
+	m.UpdateSyncVarsWithACIDs(se.ACIDs...)
 }
 func (se *SyncEntity) HasEntity() bool {
 	return se.Entity != nil
@@ -123,27 +128,28 @@ func (se *SyncEntity) OnfcIDChange(sv GC.SyncVar, id int) {
 }
 //Tries to create the Entity from the SyncVars
 func (se *SyncEntity) CreateEntFromVars() error {
-	//oldE := se.Entity
+	oldE := se.Entity
 	ent, err := se.ef.Get(int(se.fcID.GetInt()))
 	if err != nil {return err}
 	se.Entity = ent
 	se.UpdateEntFromVars()
-	//se.OnNewEntity(se, oldE, se.Entity)
+	if se.OnNewEntity != nil {
+		se.OnNewEntity(se, oldE, se.Entity)
+	}
 	return nil
 }
 //Updates the SyncVars from the Entity if possible
 func (se *SyncEntity) UpdateVarsFromEnt() {
 	if se.HasEntity() {
-		x,y := se.Entity.IntPos()
-		se.X.SetInt(uint16(x));se.X.SetInt(uint16(y))
-		dx,dy := se.Entity.GetPosDelta()
+		x,y,dx,dy := se.Entity.GetPosIntPBytes()
+		se.X.SetInt(uint16(x));se.Y.SetInt(uint16(y))
 		se.Dx.SetByte(dx);se.Dy.SetByte(dy)
 	}
 }
 //Updates the Entity from the SyncVars if possible
 func (se *SyncEntity) UpdateEntFromVars() {
 	if se.HasEntity() {
-		se.Entity.SetPosDelta(int(se.X.GetInt()), int(se.Y.GetInt()), se.Dx.GetByte(), se.Dy.GetByte())
+		se.Entity.SetPosIntPBytes(int(se.X.GetInt()), int(se.Y.GetInt()), se.Dx.GetByte(), se.Dy.GetByte())
 	}
 }
 //Returns a new SyncEntity that will use ef as a creature factory
@@ -157,6 +163,10 @@ func GetNewSyncEntity(ACIDStart int, ef *EntityFactory) (se *SyncEntity) {
 		Dx:GC.CreateSyncByte(0),
 		Dy:GC.CreateSyncByte(0),
 		extraData:GC.CreateSyncString(""),
+	}
+	se.ACIDs = make([]int, SYNCVARS_PER_ENTITY)
+	for i,_ := range(se.ACIDs) {
+		se.ACIDs[i] = ACIDStart+i
 	}
 	return
 }

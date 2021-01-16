@@ -21,12 +21,16 @@ const (
 // +-+-+-+-+-+-+-+-+-+-+
 type SyncPlayer struct {
 	*Player
-	se *SyncEntity
+	Se *SyncEntity
 	ACIDStart int
+	ACIDs []int
 	
 	Channel *GC.SyncString
 	
 	OnNewPlayer func(se interface{}, oldE, newE GE.Drawable)
+}
+func (sp *SyncPlayer) UpdateSyncVars(m GC.Handler) {
+	m.UpdateSyncVarsWithACIDs(sp.ACIDs...)
 }
 func (sp *SyncPlayer) HasPlayer() bool {
 	return sp.Player != nil
@@ -66,8 +70,8 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 }
 //tries to build the entity and the player from the creation data that should be in the channel
 func (sp *SyncPlayer) CreatePlayerFromVars() error {
-	//oldE := sp.Player
-	err := sp.se.CreateEntFromVars()
+	oldE := sp.Player
+	err := sp.Se.CreateEntFromVars()
 	if err != nil {return err}
 	err, mt, data := sp.GetFromChannel()
 	if err != nil {return err}
@@ -75,21 +79,25 @@ func (sp *SyncPlayer) CreatePlayerFromVars() error {
 		return fmt.Errorf(ERR_SYNCPLAYER_CREATION, mt, data)
 	}
 	err, sp.Player = GetPlayerByCreationData(data)
-	//sp.OnNewPlayer(sp, oldE, sp.Player)
+	if err != nil {return err}
+	sp.Player.Race.Entity = sp.Se.Entity
+	if sp.OnNewPlayer != nil {
+		sp.OnNewPlayer(sp, oldE, sp.Player)
+	}
 	return err
 }
 //tries to transfer the entity and send the creation data to the channel
 func (sp *SyncPlayer) CreateVarsFromPlayer() error {
-	err := sp.se.SetEntity(&sp.Player.Race.Entity)
+	err := sp.Se.SetEntity(sp.Player.Race.Entity)
 	if err != nil {return err}
 	sp.SendToChannel(SYNCPLAYER_CREATION, sp.Player.GetCreationData())
 	return nil
 }
 func (sp *SyncPlayer) UpdatePlayerFromVars() {
-	sp.se.UpdateEntFromVars()
+	sp.Se.UpdateEntFromVars()
 }
 func (sp *SyncPlayer) UpdateVarsFromPlayer() {
-	sp.se.UpdateVarsFromEnt()
+	sp.Se.UpdateVarsFromEnt()
 }
 //Sends the msg as message type msgT to the syncchannel
 func (sp *SyncPlayer) SendToChannel(msgT byte, msg []byte) {
@@ -107,24 +115,28 @@ func (sp *SyncPlayer) GetFromChannel() (error, byte, []byte) {
 func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory) (sp *SyncPlayer) {
 	sp = &SyncPlayer{
 		ACIDStart:ACIDStart,
-		se:GetNewSyncEntity(ACIDStart+1, ef),
+		Se:GetNewSyncEntity(ACIDStart+1, ef),
 		Channel:GC.CreateSyncString(""),
+	}
+	sp.ACIDs = make([]int, SYNCVARS_PER_PLAYER)
+	for i,_ := range(sp.ACIDs) {
+		sp.ACIDs[i] = ACIDStart+i
 	}
 	return
 }
 func (sp *SyncPlayer) GetSyncVars(mp map[int]GC.SyncVar) {
-	sp.se.GetSyncVars(mp)
+	sp.Se.GetSyncVars(mp)
 	mp[sp.ACIDStart] = sp.Channel
 }
 func (sp *SyncPlayer) RegisterSyncVars(m *GC.ServerManager, clients ...*ws.Conn) {
-	sp.se.RegisterSyncVars(m, clients...)
+	sp.Se.RegisterSyncVars(m, clients...)
 	m.RegisterSyncVar(sp.Channel, sp.ACIDStart, clients...)
 }
 func (sp *SyncPlayer) GetRegisterdSyncVars(m *GC.ClientManager) {
-	sp.se.GetRegisterdSyncVars(m)
+	sp.Se.GetRegisterdSyncVars(m)
 	sp.Channel = 			m.SyncvarsByACID[sp.ACIDStart].(*GC.SyncString)
 }
 func (sp *SyncPlayer) RegisterOnChange(m GC.Handler) {
-	sp.se.RegisterOnChange(m)
+	sp.Se.RegisterOnChange(m)
 	m.RegisterOnChangeFunc(sp.ACIDStart, sp.OnChannelChange)
 }

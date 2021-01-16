@@ -22,13 +22,13 @@ const SCORE_DUNGEONEERING = 16
 
 //SHOULD contain information about the races stats
 type Race struct {
-	Entity
+	*Entity
 	Ability       []int8
 	Proficiencies []int8
 }
 
 func (r *Race) Copy() (r2 *Race) {
-	r2 = &Race{Entity: *r.Entity.Copy()}
+	r2 = &Race{Entity: r.Entity.Copy()}
 	return
 }
 

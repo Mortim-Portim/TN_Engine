@@ -51,7 +51,7 @@ func (cf *EntityFactory) SetUpdateFunctionMap(fncs map[string]EntityUpdater) err
 			err = fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY_BY_NAME, nil, -1, name)
 		}else{
 			idx, _ := cf.mapper[name]
-			cf.entities[idx].RegiserUpdateFunc(fnc)
+			cf.entities[idx].RegisterUpdateFunc(fnc)
 		}
 	}
 	return err
@@ -64,7 +64,7 @@ func (cf *EntityFactory) SetUpdateFunctionList(fncs []EntityUpdater) error {
 	}
 	
 	for i, fnc := range fncs {
-		cf.entities[i].RegiserUpdateFunc(fnc)
+		cf.entities[i].RegisterUpdateFunc(fnc)
 	}
 	return err
 }
