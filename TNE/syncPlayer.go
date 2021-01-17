@@ -14,6 +14,7 @@ const (
 
 const (
 	SYNCPLAYER_CREATION = iota
+	SYNCPLAYER_RESET
 )
 
 // +-+-+-+-+-+-+-+-+-+-+
@@ -36,18 +37,18 @@ func (sp *SyncPlayer) HasPlayer() bool {
 	return sp.Player != nil
 }
 //Sets the player and syncronizes it, i
-func (sp *SyncPlayer) SetPlayer(pl *Player) error {
+func (sp *SyncPlayer) SetPlayer(pl *Player) {
 	oldE := sp.Player
 	if pl == nil {
+		sp.SendToChannel(SYNCPLAYER_RESET, []byte{})
 		sp.SetNilPlayer()
-		return fmt.Errorf(ERR_ENTITY_IS_NIL, pl)
+		return
 	}
 	sp.Player = pl
 	sp.CreateVarsFromPlayer()
 	if sp.OnNewPlayer != nil {
 		sp.OnNewPlayer(sp, oldE, sp.Player)
 	}
-	return nil
 }
 func (sp *SyncPlayer) SetNilPlayer() {
 	oldE := sp.Player
@@ -65,7 +66,10 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 	switch mt {
 		case SYNCPLAYER_CREATION:
 			sp.CreatePlayerFromVars()
-			break;
+			break
+		case SYNCPLAYER_RESET:
+			sp.SetNilPlayer()
+			break
 	}
 }
 //tries to build the entity and the player from the creation data that should be in the channel
@@ -136,7 +140,9 @@ func (sp *SyncPlayer) GetRegisterdSyncVars(m *GC.ClientManager) {
 	sp.Se.GetRegisterdSyncVars(m)
 	sp.Channel = 			m.SyncvarsByACID[sp.ACIDStart].(*GC.SyncString)
 }
+func (sp *SyncPlayer) OnEntfcIDChange(sv GC.SyncVar, id int) {}
 func (sp *SyncPlayer) RegisterOnChange(m GC.Handler) {
 	sp.Se.RegisterOnChange(m)
 	m.RegisterOnChangeFunc(sp.ACIDStart, sp.OnChannelChange)
+	m.RegisterOnChangeFunc(sp.Se.ACIDStart+2, sp.OnEntfcIDChange)
 }

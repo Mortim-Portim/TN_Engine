@@ -43,7 +43,7 @@ func (su *StandardEntityUpdater) Update(e *Entity, world *World) {
 	su.Updater(e, world)
 }
 type Entity struct {
-	GE.WObj
+	*GE.WObj
 
 	anims       []*GE.DayNightAnim
 	currentAnim uint8
@@ -128,7 +128,7 @@ func (e *Entity) ApplyAction(ac []byte) error {
 **/
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
-	e2 = &Entity{*e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
+	e2 = &Entity{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
 		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
@@ -265,7 +265,7 @@ func (e *Entity) FactoryCreationID() int16 {
 	return e.factoryCreationId
 }
 func (e *Entity) GetWObj() *GE.WObj {
-	return &e.WObj
+	return e.WObj
 }
 func (e *Entity) Changed() bool {
 	return e.changed
@@ -343,7 +343,7 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	if err != nil {
 		return e, err
 	}
-	e.WObj = *wobj
+	e.WObj = wobj
 
 	idx := &GE.List{}
 	idx.LoadFromFile(path + INDEX_FILE_NAME)

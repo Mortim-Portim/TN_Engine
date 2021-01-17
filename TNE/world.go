@@ -80,6 +80,13 @@ func (w *World) Print() (out string) {
 	out = fmt.Sprintf("SHOULD print Information about World\n")
 	return
 }
+func (w *World) PrintPlayerPos() (out string) {
+	for _,pl := range(w.Players) {
+		x,y := pl.IntPos()
+		out += fmt.Sprintf("(%p)|%v, %v|", pl.Entity, x, y)
+	}
+	return
+}
 /**
 Updates the lightlevel and applies raycasting if necassary
 **/

@@ -92,21 +92,19 @@ func (sm *SmallWorld) HasNewActivePlayer() (bool, *Player) {
 	}
 	return false, nil
 }
-func (sm *SmallWorld) GetSyncPlayersFromWorld(w *World) error {
+func (sm *SmallWorld) GetSyncPlayersFromWorld(w *World) {
 	idx := 0
 	for _,pl := range(w.Players) {
 		if pl != sm.ActivePlayer.Player {
 			if pl != sm.Plys[idx].Player {
-				err := sm.Plys[idx].SetPlayer(pl)
-				if err != nil {return err}
+				sm.Plys[idx].SetPlayer(pl)
 			}
 			idx ++
 		}
 	}
 	for i := idx; i < len(sm.Plys); i++ {
-		sm.Plys[idx].SetNilPlayer()
+		sm.Plys[idx].SetPlayer(nil)
 	}
-	return nil
 }
 func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {
 	if wS != nil {
@@ -162,17 +160,28 @@ func (sm *SmallWorld) ReassignAllEntities() {
 	}
 }
 func (sm *SmallWorld) StandardOnEntityChange(se interface{}, oldE, newE GE.Drawable){
+	fmt.Printf("Changing Entity: %p\n", se)
 	if sm.HasWorldStruct() {
-		if oldE != nil {
-			sm.Struct.Add_Drawables.Remove(oldE)
+		if fmt.Sprintf("%p", oldE) != "0x0" {
+			fmt.Printf("Removing %p\n", oldE)
+			err, dp := sm.Struct.Add_Drawables.Remove(oldE)
+			if err == nil {
+				sm.Struct.Add_Drawables = dp
+			}else{
+				fmt.Println(err)
+			}
+			fmt.Println(([]GE.Drawable)(*sm.Struct.Add_Drawables))
 		}
-		if newE != nil {
+		if fmt.Sprintf("%p", newE) != "0x0" {
+			fmt.Printf("Adding %p\n", newE)
 			sm.Struct.Add_Drawables.Add(newE)
+			fmt.Println(([]GE.Drawable)(*sm.Struct.Add_Drawables))
 		}
 	}
 }
 func (sm *SmallWorld) OnActivePlayerChange(se interface{}, oldE, newE GE.Drawable) {
 	sm.newPlayer = true
+	fmt.Printf("Changing Player: %p\n", se)
 	sm.StandardOnEntityChange(se, oldE, newE)
 }
 func (sm *SmallWorld) RegisterOnEntityChangeListeners() {

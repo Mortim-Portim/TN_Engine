@@ -104,18 +104,22 @@ func (se *SyncEntity) SetNilEntity() {
 }
 //Called when the x-position syncVar changes
 func (se *SyncEntity) OnXChange(sv GC.SyncVar, id int) {
+	fmt.Println("Xpos changed!!!!!!")
 	se.UpdateEntFromVars()
 }
 //Called when the y-position syncVar changes
 func (se *SyncEntity) OnYChange(sv GC.SyncVar, id int) {
+	fmt.Println("Ypos changed!!!!!!")
 	se.UpdateEntFromVars()
 }
 //Called when the x-difference syncVar changes
 func (se *SyncEntity) OnxdChange(sv GC.SyncVar, id int) {
+	fmt.Println("dx changed!!!!!!")
 	se.UpdateEntFromVars()
 }
 //Called when the y-difference syncVar changes
 func (se *SyncEntity) OnydChange(sv GC.SyncVar, id int) {
+	fmt.Println("dy changed!!!!!!")
 	se.UpdateEntFromVars()
 }
 //Called when the extra data syncVar changes
@@ -124,7 +128,9 @@ func (se *SyncEntity) OnextraDataChange(sv GC.SyncVar, id int) {
 }
 //Called when the fcID syncVar changes
 func (se *SyncEntity) OnfcIDChange(sv GC.SyncVar, id int) {
+	fmt.Println("fcid changed!!!!!!")
 	se.CreateEntFromVars()
+	fmt.Println("new Ent created")
 }
 //Tries to create the Entity from the SyncVars
 func (se *SyncEntity) CreateEntFromVars() error {
@@ -150,6 +156,8 @@ func (se *SyncEntity) UpdateVarsFromEnt() {
 func (se *SyncEntity) UpdateEntFromVars() {
 	if se.HasEntity() {
 		se.Entity.SetPosIntPBytes(int(se.X.GetInt()), int(se.Y.GetInt()), se.Dx.GetByte(), se.Dy.GetByte())
+		x,y := se.Entity.IntPos()
+		fmt.Printf("Updating Entity %p to %v, %v\n", se.Entity, x, y)
 	}
 }
 //Returns a new SyncEntity that will use ef as a creature factory
@@ -164,6 +172,7 @@ func GetNewSyncEntity(ACIDStart int, ef *EntityFactory) (se *SyncEntity) {
 		Dy:GC.CreateSyncByte(0),
 		extraData:GC.CreateSyncString(""),
 	}
+	se.fcID.Clean()
 	se.ACIDs = make([]int, SYNCVARS_PER_ENTITY)
 	for i,_ := range(se.ACIDs) {
 		se.ACIDs[i] = ACIDStart+i
