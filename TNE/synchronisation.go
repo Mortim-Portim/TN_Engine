@@ -147,7 +147,7 @@ func (se *SyncEntity) UpdateVarsFromEnt() {
 			bs = append(bs, byte(se.EmovedFrames))
 		}
 		if chngs[4] {
-			bs = append(bs, cmp.FloatToBytesRoundFP(se.EmovingStepSize)...)
+			bs = append(bs, cmp.Float64ToBytes(se.EmovingStepSize)...)
 		}
 		if chngs[5] {
 			bs = append(bs, se.Eneworientation.ToByte())
@@ -183,8 +183,8 @@ func (se *SyncEntity) UpdateEntFromVars() {
 						se.Entity.movedFrames = int(bs[0])
 						bs = bs[1:]
 					}else if i == 2 {
-						se.Entity.movingStepSize = cmp.BytesToFloatRoundFP(bs[0:3])
-						bs = bs[3:]
+						se.Entity.movingStepSize = cmp.BytesToFloat64(bs[0:8])
+						bs = bs[8:]
 					}else if i == 3 {
 						se.Entity.neworientation.FromByte(bs[0])
 						bs = bs[1:]
