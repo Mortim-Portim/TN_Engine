@@ -144,5 +144,5 @@ func (sp *SyncPlayer) OnEntfcIDChange(sv GC.SyncVar, id int) {}
 func (sp *SyncPlayer) RegisterOnChange(m GC.Handler) {
 	sp.Se.RegisterOnChange(m)
 	m.RegisterOnChangeFunc(sp.ACIDStart, sp.OnChannelChange)
-	m.RegisterOnChangeFunc(sp.Se.ACIDStart+2, sp.OnEntfcIDChange)
+	m.RegisterOnChangeFunc(sp.Se.ACIDStart, sp.OnEntfcIDChange)
 }

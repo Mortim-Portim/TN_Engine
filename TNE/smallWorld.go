@@ -79,6 +79,21 @@ type SmallWorld struct {
 	
 	FrameCounter *int
 }
+func (sm *SmallWorld) UpdateAll() {
+	if sm.ActivePlayer.HasPlayer() {
+		sm.ActivePlayer.UpdateAll(nil)
+	}
+	for _,pl := range(sm.Plys) {
+		if pl.HasPlayer() {
+			pl.Player.UpdateAll(nil)
+		}
+	}
+	for _,ent := range(sm.Ents) {
+		if ent.HasEntity() {
+			ent.Entity.UpdateAll(nil)
+		}
+	}
+}
 func (sm *SmallWorld) Print() (out string) {
 	out = fmt.Sprintf("SHOULD print information about the smallWorld")
 	return

@@ -13,25 +13,10 @@ import (
 )
 const (
 	CREATURE_ANIM_STANDARD  = "idle_L"
-	CREATURE_ANIM_IDLE_L    = iota
-	CREATURE_ANIM_IDLE_R
-	CREATURE_ANIM_IDLE_U
-	CREATURE_ANIM_IDLE_D
-	CREATURE_ANIM_RUNNING_L
-	CREATURE_ANIM_RUNNING_R
-	CREATURE_ANIM_RUNNING_U
-	CREATURE_ANIM_RUNNING_D
 )
 const CREATURE_WOBJ = "#WOBJ"
 var ERR_WRONG_BYTE_LENGTH = errors.New("Wrong byte length")
 var ERR_UNKNOWN_ACTION = errors.New("Unknown Action")
-
-const (
-	ENTITY_ORIENTATION_LEFT = iota
-	ENTITY_ORIENTATION_RIGHT
-	ENTITY_ORIENTATION_UP
-	ENTITY_ORIENTATION_DOWN
-)
 
 type EntityUpdater interface {
 	Update(e *Entity, world *World)
@@ -49,7 +34,7 @@ type Entity struct {
 	currentAnim uint8
 
 	xPos, yPos                  int64
-	orientation, neworientation uint8
+	orientation, neworientation *Direction
 	isMoving, keepMoving        bool
 
 	movingFrames, movedFrames int
@@ -84,48 +69,6 @@ func (e *Entity) GetCreationData() (bs []byte) {
 	copy(bs[16:18], cmp.Int16ToBytes(e.factoryCreationId))
 	return
 }
-/**
-!!Deprecated!!
-func (e *Entity) ResetAppliedActions() {
-	e.AppliedActions = make([]byte, 0)
-}
-func (e *Entity) GetDelta() []byte {
-	return e.AppliedActions
-}
-func (e *Entity) SetDelta(bs []byte) {
-	for len(bs) > 0 {
-		upTo := 1
-		//Check for an action with more data here
-		if bs[0] == ENTITY_START_MOVE {
-			upTo = 3
-		}
-		ac := bs[0:upTo]
-		bs = bs[upTo:]
-		e.ApplyAction(ac)
-	}
-}
-func (e *Entity) ApplyAction(ac []byte) error {
-	t := ac[0]
-	if t == ENTITY_START_MOVE {
-		e.Move(int(ac[1]), int(ac[2]))
-	}else if t == ENTITY_KEEP_MOVING {
-		e.KeepMoving(true)
-	}else if t == ENTITY_STOP_KEEP_MOVING {
-		e.KeepMoving(false)
-	}else if t == ENTITY_CHANGE_ORIENTATION_LEFT {
-		e.ChangeOrientation(0)
-	}else if t == ENTITY_CHANGE_ORIENTATION_RIGHT {
-		e.ChangeOrientation(1)
-	}else if t == ENTITY_CHANGE_ORIENTATION_UP {
-		e.ChangeOrientation(2)
-	}else if t == ENTITY_CHANGE_ORIENTATION_DOWN {
-		e.ChangeOrientation(3)
-	}else{
-		return ERR_UNKNOWN_ACTION
-	}
-	return nil
-}
-**/
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
 	e2 = &Entity{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
@@ -207,43 +150,42 @@ func (e *Entity) setIntPos() {
 }
 
 //Changes the orientation
-func (e *Entity) ChangeOrientation(newO uint8) {
-	if e.isMoving {
-		e.neworientation = newO
-	}else{
-		if newO != e.orientation {
-			e.orientation = newO
-			e.neworientation = newO
+func (e *Entity) ChangeOrientation(dir *Direction) {
+	if dir.IsValid() {
+		if e.isMoving {
+			e.neworientation = dir
+		}else{
+			if !dir.Equals(e.orientation) {
+				e.orientation = dir
+				e.neworientation = dir
+			}
 		}
 	}
 }
 
 //Updates the Orientation animation, ONLY call this if really necassary
 func (e *Entity) UpdateOrientationAnim() {
-	idx := e.orientation
-	if e.isMoving {
-		idx += 4
+	idx := e.orientation.ID
+	if idx >= 0 {
+		if idx == ENTITY_ORIENTATION_LU || idx == ENTITY_ORIENTATION_LD {
+			idx = ENTITY_ORIENTATION_L
+		}
+		if idx == ENTITY_ORIENTATION_RU || idx == ENTITY_ORIENTATION_RD {
+			idx = ENTITY_ORIENTATION_R
+		}
+		if e.isMoving {
+			idx += 4
+		}
+		e.SetAnim(int(idx))
 	}
-	e.SetAnim(int(idx))
 }
-func (e *Entity) moveInDirection(dir uint8) {
-	dx, dy := 0.0, 0.0
-	switch dir {
-	case ENTITY_ORIENTATION_LEFT:
-		dx = -e.movingStepSize
-		break
-	case ENTITY_ORIENTATION_RIGHT:
-		dx = e.movingStepSize
-		break
-	case ENTITY_ORIENTATION_UP:
-		dy = -e.movingStepSize
-		break
-	case ENTITY_ORIENTATION_DOWN:
-		dy = e.movingStepSize
-		break
+func (e *Entity) moveInDirection(dir *Direction) {
+	if dir.IsValid() {
+		dx, dy := e.movingStepSize, e.movingStepSize
+		dx *= dir.Dx; dy *= dir.Dy
+		e.WObj.MoveBy(dx, dy)
+		e.setIntPos()
 	}
-	e.WObj.MoveBy(dx, dy)
-	e.setIntPos()
 }
 
 //Implements EntityI
@@ -291,6 +233,16 @@ func (e *Entity) KeepsMoving() bool {
 }
 func (e *Entity) IntPos() (int64, int64) {
 	return e.xPos, e.yPos
+}
+//[6]byte
+func (e *Entity) PosToBytes() []byte {
+	x,y,dx,dy := e.GetPosIntPBytes()
+	return append(append(cmp.Int16ToBytes(int16(x)), cmp.Int16ToBytes(int16(y))...), byte(dx), byte(dy))
+}
+//[6]byte
+func (e *Entity) PosFromBytes(bs []byte) {
+	x := cmp.BytesToInt16(bs[0:2]); y := cmp.BytesToInt16(bs[2:4])
+	e.SetPosIntPBytes(int(x),int(y), bs[4], bs[5])
 }
 func (e *Entity) GetPosIntPBytes() (int, int, byte, byte) {
 	fx,fy := e.GetBottomRight()
@@ -354,10 +306,53 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 		e.anims = append(e.anims, anim)
 	}
 	e.setIntPos()
+	e.orientation = GetNewDirection()
+	e.neworientation = GetNewDirection()
 	//e.ResetAppliedActions()
 	return e, nil
 }
-
+/**
+!!Deprecated!!
+func (e *Entity) ResetAppliedActions() {
+	e.AppliedActions = make([]byte, 0)
+}
+func (e *Entity) GetDelta() []byte {
+	return e.AppliedActions
+}
+func (e *Entity) SetDelta(bs []byte) {
+	for len(bs) > 0 {
+		upTo := 1
+		//Check for an action with more data here
+		if bs[0] == ENTITY_START_MOVE {
+			upTo = 3
+		}
+		ac := bs[0:upTo]
+		bs = bs[upTo:]
+		e.ApplyAction(ac)
+	}
+}
+func (e *Entity) ApplyAction(ac []byte) error {
+	t := ac[0]
+	if t == ENTITY_START_MOVE {
+		e.Move(int(ac[1]), int(ac[2]))
+	}else if t == ENTITY_KEEP_MOVING {
+		e.KeepMoving(true)
+	}else if t == ENTITY_STOP_KEEP_MOVING {
+		e.KeepMoving(false)
+	}else if t == ENTITY_CHANGE_ORIENTATION_LEFT {
+		e.ChangeOrientation(0)
+	}else if t == ENTITY_CHANGE_ORIENTATION_RIGHT {
+		e.ChangeOrientation(1)
+	}else if t == ENTITY_CHANGE_ORIENTATION_UP {
+		e.ChangeOrientation(2)
+	}else if t == ENTITY_CHANGE_ORIENTATION_DOWN {
+		e.ChangeOrientation(3)
+	}else{
+		return ERR_UNKNOWN_ACTION
+	}
+	return nil
+}
+**/
 /**
 //Loads an entity from full data len(data) = 37
 func (cf *EntityFactory) LoadEntityFromFullData(data []byte) (*Entity, error) {

@@ -97,6 +97,15 @@ func (w *World) UpdateLights(ticks float64) {
 /**
 Updates all chunks around all players with the specified delta of the world
 **/
+func (w *World) UpdateAll() {
+	for _,pl := range(w.Players) {
+		pl.Update(w)
+	}
+	w.UpdatePlayerChunks(w.Players)
+}
+/**
+Updates all chunks around all players with the specified delta of the world
+**/
 func (w *World) UpdatePlayerChunks(Players []*Player) {
 	w.UpdateChunks(w.GetPlayerChunks(Players))
 }
