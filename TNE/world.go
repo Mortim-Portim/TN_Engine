@@ -97,22 +97,21 @@ func (w *World) UpdateLights(ticks float64) {
 /**
 Updates all chunks around all players with the specified delta of the world
 **/
-func (w *World) UpdateAll() {
+func (w *World) UpdateAllPlayer() {
 	for _,pl := range(w.Players) {
 		pl.Update(w, w.Structure.Collides)
 	}
-	w.UpdatePlayerChunks(w.Players)
 }
 /**
 Updates all chunks around all players with the specified delta of the world
 **/
-func (w *World) UpdatePlayerChunks(Players []*Player) {
-	w.UpdateChunks(w.GetPlayerChunks(Players))
+func (w *World) UpdatePlayerChunks(Players ...*Player) []int {
+	return w.UpdateChunks(w.GetPlayerChunks(Players...))
 }
 /**
 Returns a list of indexes refering to the chunks around the players
 **/
-func (w *World) GetPlayerChunks(Players []*Player) (idxs []int) {
+func (w *World) GetPlayerChunks(Players ...*Player) (idxs []int) {
 	idxs = make([]int, 0)
 	for _, player := range Players {
 		cx,cy := GetChunkOfEntity(player.Entity)
@@ -128,12 +127,16 @@ func (w *World) GetPlayerChunks(Players []*Player) (idxs []int) {
 /**
 Updates the given chunks
 **/
-func (w *World) UpdateChunks(idxs []int) {
-	allRems := make([]*Entity, 0)
+func (w *World) UpdateChunks(idxs []int) (chnged []int) {
+	allRems := make([]*Entity, 0); chnged = make([]int, 0)
 	for _,idx := range(idxs) {
 		if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
 			w.Chunks[idx].LastUpdateFrame = *w.FrameCounter
-			allRems = append(allRems, w.Chunks[idx].UpdateEntities(w, w.Structure.Collides)...)
+			rems := w.Chunks[idx].UpdateEntities(w, w.Structure.Collides)
+			if len(rems) > 0 {
+				allRems = append(allRems, rems...)
+				chnged = append(chnged, idx)
+			}
 		}
 	}
 	w.ReAssignEntities(allRems)

@@ -79,6 +79,41 @@ type SmallWorld struct {
 	
 	FrameCounter *int
 }
+func (sm *SmallWorld) SetEntitiesFromChunks(chL []*Chunk, idxs ...int) {
+	setted := make([]int, 0)
+	for _,idx := range(idxs) {
+		ents := chL[idx].GetEntities()
+		for _,e := range(ents) {
+			eidx := sm.HasEntity(e)
+			if eidx < 0 {
+				eidx = sm.GetIdxOfNilEnt()
+				sm.Ents[eidx].SetEntity(e)
+			}
+			setted = append(setted, eidx)
+		}
+	}
+	for i,_ := range(sm.Ents) {
+		if !containsI(setted, i) {
+			sm.Ents[i].SetEntity(nil)
+		}
+	}
+}
+func (sm *SmallWorld) GetIdxOfNilEnt() int {
+	for i,se := range(sm.Ents) {
+		if !se.HasEntity() {
+			return i
+		}
+	}
+	return 0
+}
+func (sm *SmallWorld) HasEntity(e *Entity) int {
+	for i,se := range(sm.Ents) {
+		if se.HasEntity() && se.Entity == e {
+			return i
+		}
+	}
+	return -1
+}
 func (sm *SmallWorld) UpdateAll() {
 	if sm.ActivePlayer.HasPlayer() {
 		sm.ActivePlayer.UpdateAll(nil, sm.Struct.Collides)

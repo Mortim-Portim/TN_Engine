@@ -18,6 +18,11 @@ const (
 func GetNewDirection() *Direction {
 	return &Direction{ID:INVALID_DIR}
 }
+func GetNewRandomDirection() (d *Direction) {
+	d = &Direction{ID:RandomInt(ENTITY_ORIENTATION_L,ENTITY_ORIENTATION_LD)}
+	d.FromID()
+	return
+}
 func (d *Direction) Equals(d2 *Direction) bool {
 	if d.ID == d2.ID {
 		return true

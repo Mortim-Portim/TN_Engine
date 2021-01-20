@@ -30,6 +30,9 @@ type Chunk struct {
 	
 	LastUpdateFrame int
 }
+func (c *Chunk) GetEntities() []*Entity {
+	return c.entities
+}
 func (c *Chunk) Add(e *Entity) error {
 	_, _, err := c.RelPosOfEntity(e)
 	if err != nil {
