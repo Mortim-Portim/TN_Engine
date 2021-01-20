@@ -71,7 +71,7 @@ func (e *Entity) GetCreationData() (bs []byte) {
 }
 //Copys the Entity
 func (e *Entity) Copy() (e2 *Entity) {
-	e2 = &Entity{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation, e.neworientation, e.isMoving, e.keepMoving, 
+	e2 = &Entity{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation.Copy(), e.neworientation.Copy(), e.isMoving, e.keepMoving, 
 		e.movingFrames, e.movedFrames, e.movingStepSize, e.changed, e.factoryCreationId, e.frame, e.Updater}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
@@ -83,7 +83,7 @@ func (e *Entity) Copy() (e2 *Entity) {
 }
 
 //Updates the movement and calls the provided Update func afterwards
-func (e *Entity) UpdateAll(w *World) {
+func (e *Entity) UpdateAll(w *World, Collider func(x,y int)bool) {
 	if e.isMoving {
 		if e.movedFrames >= e.movingFrames {
 			e.isMoving = false
@@ -91,13 +91,13 @@ func (e *Entity) UpdateAll(w *World) {
 			if e.keepMoving {
 				e.isMoving = true
 				e.movedFrames = 0
-				e.moveInDirection(e.orientation)
+				e.moveInDirection(e.orientation, Collider)
 				e.movedFrames++
 			} else {
 				e.changed = true
 			}
 		} else {
-			e.moveInDirection(e.orientation)
+			e.moveInDirection(e.orientation, Collider)
 			e.movedFrames++
 		}
 		e.UpdateOrientationAnim()
@@ -142,9 +142,9 @@ func (e *Entity) SetBottomRightTo(x, y float64) {
 }
 func (e *Entity) setIntPos() {
 	xf, yf, _ := e.WObj.GetMiddle()
-	x, y := int64(math.Round(xf-0.5)), int64(math.Round(yf-0.5))
-	if x != e.xPos || y != e.yPos {
-		e.xPos, e.yPos = x, y
+	x, y := e.FloatPosToIntPos(xf,yf)
+	if int64(x) != e.xPos || int64(y) != e.yPos {
+		e.xPos, e.yPos = int64(x), int64(y)
 		e.changed = true
 	}
 }
@@ -179,15 +179,29 @@ func (e *Entity) UpdateOrientationAnim() {
 		e.SetAnim(int(idx))
 	}
 }
-func (e *Entity) moveInDirection(dir *Direction) {
+func (e *Entity) moveInDirection(dir *Direction, Collider func(x,y int)bool) {
 	if dir.IsValid() {
 		dx, dy := e.movingStepSize, e.movingStepSize
 		dx *= dir.Dx; dy *= dir.Dy
-		e.WObj.MoveBy(dx, dy)
+		fx,fy,_ := e.GetPos()
+		nX,nY := e.FloatPosToIntPos(fx+dx, fy+dy)
+		if Collider(nX, nY) {
+			if !Collider(e.FloatPosToIntPos(fx+dx, fy)) {
+				e.WObj.MoveBy(dx, 0)
+			}else if !Collider(e.FloatPosToIntPos(fx, fy+dy)) {
+				e.WObj.MoveBy(0, dy)
+			}else{
+				return
+			}
+		}else{
+			e.WObj.MoveBy(dx, dy)
+		}
 		e.setIntPos()
 	}
 }
-
+func (e *Entity) FloatPosToIntPos(fx, fy float64) (int, int) {
+	return int(math.Round(fx-0.5)), int(math.Round(fy-0.5))
+}
 //Implements EntityI
 func (e *Entity) GetDrawBox() *GE.Rectangle {
 	return e.WObj.GetDrawBox()

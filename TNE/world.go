@@ -99,7 +99,7 @@ Updates all chunks around all players with the specified delta of the world
 **/
 func (w *World) UpdateAll() {
 	for _,pl := range(w.Players) {
-		pl.Update(w)
+		pl.Update(w, w.Structure.Collides)
 	}
 	w.UpdatePlayerChunks(w.Players)
 }
@@ -133,7 +133,7 @@ func (w *World) UpdateChunks(idxs []int) {
 	for _,idx := range(idxs) {
 		if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
 			w.Chunks[idx].LastUpdateFrame = *w.FrameCounter
-			allRems = append(allRems, w.Chunks[idx].UpdateEntities(w)...)
+			allRems = append(allRems, w.Chunks[idx].UpdateEntities(w, w.Structure.Collides)...)
 		}
 	}
 	w.ReAssignEntities(allRems)

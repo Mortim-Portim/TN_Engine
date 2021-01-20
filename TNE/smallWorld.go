@@ -81,16 +81,16 @@ type SmallWorld struct {
 }
 func (sm *SmallWorld) UpdateAll() {
 	if sm.ActivePlayer.HasPlayer() {
-		sm.ActivePlayer.UpdateAll(nil)
+		sm.ActivePlayer.UpdateAll(nil, sm.Struct.Collides)
 	}
 	for _,pl := range(sm.Plys) {
 		if pl.HasPlayer() {
-			pl.Player.UpdateAll(nil)
+			pl.Player.UpdateAll(nil, sm.Struct.Collides)
 		}
 	}
 	for _,ent := range(sm.Ents) {
 		if ent.HasEntity() {
-			ent.Entity.UpdateAll(nil)
+			ent.Entity.UpdateAll(nil, sm.Struct.Collides)
 		}
 	}
 }

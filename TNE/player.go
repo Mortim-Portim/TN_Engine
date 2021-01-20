@@ -30,8 +30,8 @@ func (p *Player) Copy() (p2 *Player) {
 	return
 }
 //updates the player
-func (p *Player) Update(w *World) {
-	p.Entity.UpdateAll(w)
+func (p *Player) Update(w *World, Collider func(x,y int)bool) {
+	p.Entity.UpdateAll(w, Collider)
 }
 //moves the world to the players position
 func (p *Player) MoveWorld(w *GE.WorldStructure) {

@@ -115,9 +115,7 @@ func (se *SyncEntity) OnChannelChange(sv GC.SyncVar, id int) {
 }
 //Called when the fcID syncVar changes
 func (se *SyncEntity) OnfcIDChange(sv GC.SyncVar, id int) {
-	fmt.Println("fcid changed!!!!!!")
 	se.CreateEntFromVars()
-	fmt.Println("new Ent created")
 }
 //Tries to create the Entity from the SyncVars
 func (se *SyncEntity) CreateEntFromVars() error {
@@ -203,34 +201,37 @@ func (se *SyncEntity) UpdateEntFromVars() {
 func (se *SyncEntity) LookForChanges() (chngs []bool) {
 	if se.HasEntity() {
 		chngs = make([]bool, 7)
-		if se.Entity.isMoving != se.EisMoving {
+		if se.Entity.isMoving != se.EisMoving || se.AllChanged {
 			chngs[0] = true
 			se.EisMoving = se.Entity.isMoving
 		}
-		if se.Entity.keepMoving != se.EkeepMoving {
+		if se.Entity.keepMoving != se.EkeepMoving || se.AllChanged {
 			chngs[1] = true
 			se.EkeepMoving = se.Entity.keepMoving
 		}
-		if se.Entity.movingFrames != se.EmovingFrames {
+		if se.Entity.movingFrames != se.EmovingFrames || se.AllChanged {
 			chngs[2] = true
 			se.EmovingFrames = se.Entity.movingFrames
 		}
-		if se.Entity.movedFrames != se.EmovedFrames {
+		if se.Entity.movedFrames != se.EmovedFrames || se.AllChanged {
 			chngs[3] = true
 			se.EmovedFrames = se.Entity.movedFrames
 		}
-		if se.Entity.movingStepSize != se.EmovingStepSize {
+		if se.Entity.movingStepSize != se.EmovingStepSize || se.AllChanged {
 			chngs[4] = true
 			se.EmovingStepSize = se.Entity.movingStepSize
 		}
-		if !se.Entity.neworientation.Equals(se.Eneworientation) {
+		if !se.Entity.neworientation.Equals(se.Eneworientation) || se.AllChanged {
 			chngs[5] = true
 			se.Eneworientation = se.Entity.neworientation.Copy()
 		}
-		if !se.Entity.orientation.Equals(se.Eorientation) {
+		if !se.Entity.orientation.Equals(se.Eorientation) || se.AllChanged {
 			chngs[6] = true
 			se.Eorientation = se.Entity.orientation.Copy()
 		}
+		if se.AllChanged {
+			se.AllChanged = false
+		} 
 	}
 	return
 }
