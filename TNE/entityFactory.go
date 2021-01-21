@@ -3,6 +3,7 @@ package TNE
 import (
 	"fmt"
 	"github.com/mortim-portim/GraphEng/GE"
+	cmp "github.com/mortim-portim/GraphEng/Compression"
 )
 
 const INDEX_FILE_NAME = "#index.txt"
@@ -38,7 +39,17 @@ type EntityFactory struct {
 	prepare      int
 	frameCounter *int
 }
-
+func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
+	if len(data) != OBJ_CREATION_DATA_LENGTH {
+		return nil, ERR_WRONG_BYTE_LENGTH
+	}
+	fcID := int(cmp.BytesToInt16(data[16:18]))
+	e, err := cf.Get(fcID)
+	if err != nil {return nil, err}
+	e.xPos = cmp.BytesToInt64(data[0:8])
+	e.yPos = cmp.BytesToInt64(data[8:16])
+	return e, nil
+}
 func (cf *EntityFactory) Print() (out string) {
 	out = fmt.Sprintf("Path: %v, crNames: %v, entities: %v, prepare: %v, frame: %v",
 		cf.rootPath, cf.crNames, len(cf.entities), cf.prepare, *cf.frameCounter)
@@ -51,7 +62,7 @@ func (cf *EntityFactory) SetUpdateFunctionMap(fncs map[string]EntityUpdater) err
 			err = fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY_BY_NAME, nil, -1, name)
 		}else{
 			idx, _ := cf.mapper[name]
-			cf.entities[idx].RegisterUpdateFunc(fnc)
+			cf.entities[idx].RegisterUpdateCallback(fnc)
 		}
 	}
 	return err
@@ -64,7 +75,7 @@ func (cf *EntityFactory) SetUpdateFunctionList(fncs []EntityUpdater) error {
 	}
 	
 	for i, fnc := range fncs {
-		cf.entities[i].RegisterUpdateFunc(fnc)
+		cf.entities[i].RegisterUpdateCallback(fnc)
 	}
 	return err
 }
