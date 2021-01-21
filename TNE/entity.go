@@ -12,8 +12,15 @@ type Entity struct {
 	
 	UpdateCallBack EntityUpdater
 }
-func (e *Entity) Copy() (*Entity) {
-	return &Entity{Eobj:e.Eobj.Copy()}
+func (e *Entity) Init() {
+	if e.Eobj != nil {
+		e.Eobj.RegisterUpdateFunc(e.OnEobjUpdate)
+	}
+}
+func (e *Entity) Copy() (e2 *Entity) {
+	e2 = &Entity{Eobj:e.Eobj.Copy()}
+	e2.Init()
+	return 
 }
 
 
@@ -29,6 +36,6 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	eo, err := LoadEobj(path, frameCounter)
 	if err != nil {return nil,err}
 	e := &Entity{Eobj:eo}
-	e.Eobj.RegisterUpdateFunc(e.OnEobjUpdate)
+	e.Init()
 	return e, nil
 }

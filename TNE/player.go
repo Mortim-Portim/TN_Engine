@@ -2,8 +2,6 @@ package TNE
 
 import (
 	"github.com/mortim-portim/GraphEng/GE"
-	//"fmt"
-	//"math"
 )
 const MIN_MOVMENT_DIFF = 0.2
 
