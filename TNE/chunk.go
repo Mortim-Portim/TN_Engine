@@ -51,11 +51,11 @@ func (c *Chunk) RemoveEntity(e *Entity) {
 		c.RemoveEntityByIdx(idx)
 	}
 }
-func (c *Chunk) UpdateEntities(w *World, Collider func(x,y int)bool) (removed []*Entity) {
+func (c *Chunk) UpdateEntities(w *World, server bool, Collider func(x,y,w,h float64)bool) (removed []*Entity) {
 	removed = make([]*Entity, 0)
 	for idx, entity := range c.entities {
 		if entity != nil {
-			entity.UpdateAll(w, Collider)
+			entity.UpdateAll(w, server, Collider)
 			_, _, err := c.RelPosOfEntity(entity)
 			if err != nil {
 				//Creature is not in this chunk anymore

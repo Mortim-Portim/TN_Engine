@@ -20,7 +20,7 @@ func (enup *EnupPassive) Update(e *Entity, world *World) {
 
 func (enup *EnupPassive) NewRoute(e *Entity, world *World) {
 	var x, y int
-
+	bnds := e.Eobj.Hitbox.Bounds()
 	for {
 		x = rand.Intn(10)
 		y = rand.Intn(10 - x)
@@ -33,7 +33,7 @@ func (enup *EnupPassive) NewRoute(e *Entity, world *World) {
 			y *= -1
 		}
 
-		if world.Structure.Collides(x, y) {
+		if world.Structure.Collides(float64(x), float64(y), bnds.X, bnds.Y) {
 			continue
 		}
 

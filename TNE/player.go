@@ -14,10 +14,12 @@ type Player struct {
 	*Race
 }
 func (p *Player) Move() {
+	if p.Entity.isMoving {
+		return
+	}
 	p.Entity.Move(0.1,1)
 }
 func (p *Player) GetCreationData() (bs []byte) {
-	
 	return
 }
 func GetPlayerByCreationData(bs []byte) (error, *Player) {
@@ -28,8 +30,8 @@ func (p *Player) Copy() (p2 *Player) {
 	return
 }
 //updates the player
-func (p *Player) Update(w *World, Collider func(x,y int)bool) {
-	p.Entity.UpdateAll(w, Collider)
+func (p *Player) Update(w *World, server bool, Collider func(x,y,w,h float64)bool) {
+	p.UpdateAll(w, server, Collider)
 }
 //moves the world to the players position
 func (p *Player) MoveWorld(w *GE.WorldStructure) {

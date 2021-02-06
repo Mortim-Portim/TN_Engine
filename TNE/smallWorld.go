@@ -17,9 +17,9 @@ Channel communication:
 Dont forget do set FrameCounter on Server and assign WorldStructure
 **/
 
-func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path string) (sm *SmallWorld, err error) {
+func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path string, c *chan bool) (sm *SmallWorld, err error) {
 	fc := 0
-	ef, err := GetEntityFactory(entity_path, &fc, 3)
+	ef, err := GetEntityFactory(entity_path, &fc, 3, c)
 	sm = &SmallWorld{Ents:make([]*SyncEntity, SYNCENTITIES_PREP),
 					 Plys:make([]*SyncPlayer, SYNCPLAYER_PREP),
 					 SyncFrame:GC.CreateSyncInt64(0),
@@ -114,18 +114,18 @@ func (sm *SmallWorld) HasEntity(e *Entity) int {
 	}
 	return -1
 }
-func (sm *SmallWorld) UpdateAll() {
+func (sm *SmallWorld) UpdateAll(server bool) {
 	if sm.ActivePlayer.HasPlayer() {
-		sm.ActivePlayer.UpdateAll(nil, sm.Struct.Collides)
+		sm.ActivePlayer.UpdateAll(nil, server, sm.Struct.Collides)
 	}
 	for _,pl := range(sm.Plys) {
 		if pl.HasPlayer() {
-			pl.Player.UpdateAll(nil, sm.Struct.Collides)
+			pl.Player.UpdateAll(nil, server, sm.Struct.Collides)
 		}
 	}
 	for _,ent := range(sm.Ents) {
 		if ent.HasEntity() {
-			ent.Entity.UpdateAll(nil, sm.Struct.Collides)
+			ent.Entity.UpdateAll(nil, server, sm.Struct.Collides)
 		}
 	}
 }
@@ -174,14 +174,10 @@ func (sm *SmallWorld) Draw(screen *ebiten.Image) {
 }
 func (sm *SmallWorld) UpdateVars() {
 	for _,e := range(sm.Ents) {
-		if e.HasEntity() {
-			e.UpdateVarsFromEnt()
-		}
+		e.UpdateChanFromEnt()
 	}
 	for _,p := range(sm.Plys) {
-		if p.HasPlayer() {
-			p.UpdateVarsFromPlayer()
-		}
+		p.UpdateChanFromPlayer()
 	}
 	if sm.HasWorldStruct() {
 		sm.SyncFrame.SetInt(int64(*sm.FrameCounter))

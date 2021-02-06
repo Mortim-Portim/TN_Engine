@@ -80,10 +80,23 @@ func (w *World) Print() (out string) {
 	out = fmt.Sprintf("SHOULD print Information about World\n")
 	return
 }
-func (w *World) PrintPlayerPos() (out string) {
+func (w *World) PrintPlayers() (out string) {
 	for _,pl := range(w.Players) {
-		x,y := pl.IntPos()
-		out += fmt.Sprintf("(%p)|%v, %v|", pl.Entity, x, y)
+		x,y,_ := pl.GetPos()
+		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", pl.Entity, x, y, pl.Entity.Actions.Print())
+	}
+	for _,ent := range(w.Entities) {
+		x,y,_ := ent.GetPos()
+		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", ent, x, y, ent.Actions.Print())
+	}
+	return
+}
+func (w *World) UpdateAllPos() {
+	for _,pl := range(w.Players) {
+		pl.AddPos()
+	}
+	for _,ent := range(w.Entities) {
+		ent.AddPos()
 	}
 	return
 }
@@ -99,7 +112,7 @@ Updates all chunks around all players with the specified delta of the world
 **/
 func (w *World) UpdateAllPlayer() {
 	for _,pl := range(w.Players) {
-		pl.Update(w, w.Structure.Collides)
+		pl.Update(w, true, w.Structure.Collides)
 	}
 }
 /**
@@ -132,7 +145,7 @@ func (w *World) UpdateChunks(idxs []int) (chnged []int) {
 	for _,idx := range(idxs) {
 		if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
 			w.Chunks[idx].LastUpdateFrame = *w.FrameCounter
-			rems := w.Chunks[idx].UpdateEntities(w, w.Structure.Collides)
+			rems := w.Chunks[idx].UpdateEntities(w, false, w.Structure.Collides)
 			if len(rems) > 0 {
 				allRems = append(allRems, rems...)
 				chnged = append(chnged, idx)
