@@ -12,12 +12,17 @@ import (
 	cmp "github.com/mortim-portim/GraphEng/Compression"
 )
 
-const (
-	OBJ_ANIM_STANDARD  = "idle_L"
-)
 const CREATURE_WOBJ = "#WOBJ"
 var ERR_WRONG_BYTE_LENGTH = errors.New("Wrong byte length")
 var ERR_UNKNOWN_ACTION = errors.New("Unknown Action")
+
+/**
+#index.txt
+idle_L
+idle_R
+running_L
+running_R
+**/
 
 type Eobj struct {
 	*GE.WObj
@@ -144,7 +149,7 @@ func (e *Eobj) SetBottomRightTo(x, y float64) {
 //Updates the Orientation animation, ONLY call this if really necassary
 func (e *Eobj) UpdateOrientationAnim() {
 	idx := e.orientation.ID
-	if idx >= 0 {
+	if idx >= 0 && idx != ENTITY_ORIENTATION_U && idx != ENTITY_ORIENTATION_D {
 		if idx == ENTITY_ORIENTATION_LU || idx == ENTITY_ORIENTATION_LD {
 			idx = ENTITY_ORIENTATION_L
 		}
@@ -152,7 +157,7 @@ func (e *Eobj) UpdateOrientationAnim() {
 			idx = ENTITY_ORIENTATION_R
 		}
 		if e.isMoving {
-			idx += 4
+			idx += 2
 		}
 		e.setAnim(uint8(idx))
 	}
@@ -274,7 +279,7 @@ func LoadEobj(path string, frameCounter *int, c *chan bool) (*Eobj, error) {
 	pathS := strings.Split(path, "/")
 	name := pathS[len(pathS)-2]
 	e := &Eobj{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), Actions: NewActionStack(c)}
-	wobj, err := GE.GetWObjFromPath(name, path+OBJ_ANIM_STANDARD, path+CREATURE_WOBJ)
+	wobj, err := GE.GetEmptyWObjFromPath(name, path+CREATURE_WOBJ)
 	if err != nil {
 		return e, err
 	}
@@ -288,6 +293,8 @@ func LoadEobj(path string, frameCounter *int, c *chan bool) (*Eobj, error) {
 		anim, _ := GE.GetDayNightAnimFromParams(1, 1, 1, 1, path+anim_n+".txt", path+anim_n+".png")
 		e.anims = append(e.anims, anim)
 	}
+	e.currentAnim = 0
+	e.WObj.SetAnim(e.anims[0])
 	e.setIntPos()
 	e.orientation = GetNewDirection()
 	e.neworientation = GetNewDirection()
