@@ -279,12 +279,7 @@ func LoadEobj(path string, frameCounter *int, c *chan bool) (*Eobj, error) {
 	pathS := strings.Split(path, "/")
 	name := pathS[len(pathS)-2]
 	e := &Eobj{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), Actions: NewActionStack(c)}
-	wobj, err := GE.GetEmptyWObjFromPath(name, path+CREATURE_WOBJ)
-	if err != nil {
-		return e, err
-	}
-	e.WObj = wobj
-
+	
 	idx := &GE.List{}
 	idx.LoadFromFile(path + INDEX_FILE_NAME)
 	names := idx.GetSlice()
@@ -294,7 +289,13 @@ func LoadEobj(path string, frameCounter *int, c *chan bool) (*Eobj, error) {
 		e.anims = append(e.anims, anim)
 	}
 	e.currentAnim = 0
-	e.WObj.SetAnim(e.anims[0])
+	
+	wobj, err := GE.GetWObjFromPathAndAnim(name, path+CREATURE_WOBJ, e.anims[0])
+	if err != nil {
+		return e, err
+	}
+	e.WObj = wobj
+	
 	e.setIntPos()
 	e.orientation = GetNewDirection()
 	e.neworientation = GetNewDirection()

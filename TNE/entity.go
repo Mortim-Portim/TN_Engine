@@ -5,6 +5,7 @@ import (
 )
 type EntityUpdater interface {
 	Update(e *Entity, world *World)
+	Copy() EntityUpdater
 }
 
 type Entity struct {
