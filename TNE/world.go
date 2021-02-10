@@ -83,11 +83,11 @@ func (w *World) Print() (out string) {
 func (w *World) PrintPlayers() (out string) {
 	for _,pl := range(w.Players) {
 		x,y,_ := pl.GetPos()
-		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", pl.Entity, x, y, pl.Entity.Actions.Print())
+		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", pl.Entity, x, y, pl.Entity.Actions().Print())
 	}
 	for _,ent := range(w.Entities) {
 		x,y,_ := ent.GetPos()
-		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", ent, x, y, ent.Actions.Print())
+		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", ent, x, y, ent.Actions().Print())
 	}
 	return
 }

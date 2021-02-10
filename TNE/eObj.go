@@ -23,7 +23,6 @@ idle_R
 running_L
 running_R
 **/
-
 type Eobj struct {
 	*GE.WObj
 
@@ -37,16 +36,16 @@ type Eobj struct {
 	movingFrames, movedFrames int
 	movingStepSize            float64
 	
-	Actions *ActionStack
+	actions *ActionStack
 
 	factoryCreationId int16
 	frame   *int
-	UpdateFunc func(eo *Eobj, world *World)
+	updateFunc func(eo *Eobj, world *World)
 }
 //Copys the Eobj
 func (e *Eobj) Copy() (e2 *Eobj) {
 	e2 = &Eobj{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation.Copy(), e.neworientation.Copy(), e.isMoving, e.keepMoving, 
-		e.movingFrames, e.movedFrames, e.movingStepSize, e.Actions.Copy(), e.factoryCreationId, e.frame, e.UpdateFunc}
+		e.movingFrames, e.movedFrames, e.movingStepSize, e.actions.Copy(), e.factoryCreationId, e.frame, e.updateFunc}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
 		if anim != nil {
@@ -75,8 +74,8 @@ func (e *Eobj) UpdateAll(w *World, server bool, Collider func(x,y,w,h float64)bo
 		}
 		e.UpdateOrientationAnim()
 	}
-	if e.UpdateFunc != nil {
-		e.UpdateFunc(e, w)
+	if e.updateFunc != nil {
+		e.updateFunc(e, w)
 	}
 }
 
@@ -84,7 +83,7 @@ func (e *Eobj) UpdateAll(w *World, server bool, Collider func(x,y,w,h float64)bo
 //Synced .................................................................................................................................................
 //Initiates a move action with a specific lenght an duration
 func (e *Eobj) Move(length float64, frames int) {
-	e.Actions.AddStartMove(length, frames)
+	e.actions.AddStartMove(length, frames)
 	e.isMoving = true
 	e.movingFrames = frames
 	e.movedFrames = 0
@@ -95,13 +94,13 @@ func (e *Eobj) Move(length float64, frames int) {
 func (e *Eobj) ChangeOrientation(dir *Direction) {
 	if dir.IsValid() {
 		if e.isMoving {
-			e.Actions.AddOrientation(dir)
+			e.actions.AddOrientation(dir)
 			e.AddPos()
 			e.neworientation = dir
 		}else{
 			if !dir.Equals(e.orientation) {
-				e.Actions.AddOrientation(dir)
-				e.Actions.AddNextOrientation(dir)
+				e.actions.AddOrientation(dir)
+				e.actions.AddNextOrientation(dir)
 				e.orientation = dir
 				e.neworientation = dir
 			}
@@ -110,21 +109,21 @@ func (e *Eobj) ChangeOrientation(dir *Direction) {
 }
 func (e *Eobj) KeepMoving(mv bool) {
 	if mv != e.keepMoving {
-		e.Actions.AddKeepMoving(mv)
+		e.actions.AddKeepMoving(mv)
 		e.keepMoving = mv
 	}
 }
 func (e *Eobj) SetAnim(idx uint8) {
-	e.Actions.AddManualAnimationChange(idx)
+	e.actions.AddManualAnimationChange(idx)
 	e.setAnim(idx)
 }
 func (e *Eobj) AddPos() {
-	e.Actions.AddPosition(e.PosToBytes())
+	e.actions.AddPosition(e.PosToBytes())
 }
 
 //Unsynced ...............................................................................................................................................
 func (e *Eobj) RegisterUpdateFunc(u func(eo *Eobj, world *World)) {
-	e.UpdateFunc = u
+	e.updateFunc = u
 }
 //[6]byte
 func (e *Eobj) PosFromBytes(bs []byte) {
@@ -198,6 +197,9 @@ func (e *Eobj) IsMoving() bool {
 }
 func (e *Eobj) GetAnim() uint8 {
 	return e.currentAnim
+}
+func (e *Eobj) Actions() *ActionStack {
+	return e.actions
 }
 func (e *Eobj) KeepsMoving() bool {
 	return e.keepMoving
@@ -278,7 +280,7 @@ func LoadEobj(path string, frameCounter *int, c *chan bool) (*Eobj, error) {
 	}
 	pathS := strings.Split(path, "/")
 	name := pathS[len(pathS)-2]
-	e := &Eobj{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), Actions: NewActionStack(c)}
+	e := &Eobj{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), actions: NewActionStack(c)}
 	
 	idx := &GE.List{}
 	idx.LoadFromFile(path + INDEX_FILE_NAME)

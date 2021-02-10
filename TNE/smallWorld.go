@@ -213,8 +213,6 @@ func (sm *SmallWorld) StandardOnEntityChange(se interface{}, oldE, newE GE.Drawa
 			err, dp := sm.Struct.Add_Drawables.Remove(oldE)
 			if err == nil {
 				sm.Struct.Add_Drawables = dp
-			}else{
-				fmt.Println(err)
 			}
 			fmt.Println(([]GE.Drawable)(*sm.Struct.Add_Drawables))
 		}
