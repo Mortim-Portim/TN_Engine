@@ -61,6 +61,21 @@ func (sm *SmallWorld) Clear() {
 	sm.Plys = make([]*SyncPlayer, SYNCPLAYER_PREP)
 	sm.ActivePlayer = GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef)
 }
+func (sm *SmallWorld) SetResetConfirms(sr *chan bool) {
+	if sm.ActivePlayer.HasPlayer() {
+		sm.ActivePlayer.Player.Actions().ResetConfirm = sr
+	}
+	for _,pl := range(sm.Plys) {
+		if pl.HasPlayer() {
+			pl.Player.Actions().ResetConfirm = sr
+		}
+	}
+	for _,ent := range(sm.Ents) {
+		if ent.HasEntity() {
+			ent.Entity.Actions().ResetConfirm = sr
+		}
+	}
+}
 type SmallWorld struct {
 	X,Y,W,H float64
 	tile_path, struct_path string
