@@ -212,12 +212,17 @@ func (e *Eobj) PosToBytes() []byte {
 	x,y,dx,dy := e.getPosIntPBytes()
 	return append(append(cmp.Int16ToBytes(int16(x)), cmp.Int16ToBytes(int16(y))...), byte(dx), byte(dy))
 }
-const OBJ_CREATION_DATA_LENGTH = 18
+const OBJ_CREATION_DATA_LENGTH = 23
 func (e *Eobj) GetCreationData() (bs []byte) {
 	bs = make([]byte, OBJ_CREATION_DATA_LENGTH)
-	copy(bs[0:8], cmp.Int64ToBytes(e.xPos))
-	copy(bs[8:16], cmp.Int64ToBytes(e.yPos))
-	copy(bs[16:18], cmp.Int16ToBytes(e.factoryCreationId))
+	copy(bs[0:2], cmp.Int16ToBytes(e.factoryCreationId))
+	copy(bs[2:8], e.PosToBytes())
+	bs[8] = e.orientation.ToByte()
+	bs[9] = e.neworientation.ToByte()
+	copy(bs[10:12], cmp.Int16ToBytes(int16(e.movingFrames)))
+	copy(bs[12:14], cmp.Int16ToBytes(int16(e.movedFrames)))
+	copy(bs[14:22], cmp.Float64ToBytes(e.movingStepSize))
+	bs[22] = byte(e.currentAnim)
 	return
 }
 

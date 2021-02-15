@@ -1,7 +1,6 @@
 package TNE
 
 import (
-	cmp "github.com/mortim-portim/GraphEng/Compression"
 	ws "github.com/gorilla/websocket"
 	"github.com/mortim-portim/GameConn/GC"
 	"github.com/mortim-portim/GraphEng/GE"
@@ -51,7 +50,7 @@ func (se *SyncEntity) SetEntity(e *Entity) error {
 	oldE := se.Entity
 	se.Entity = e
 	
-	se.SendToChannel(SYNCENT_CHAN_FCID, cmp.UInt16ToBytes(uint16(e.FactoryCreationID())), true)
+	se.SendToChannel(SYNCENT_CHAN_ENTITY_CREATION, e.GetCreationData(), true)
 	se.UpdateChanFromEnt()
 	se.AllChanged = true
 	if se.OnNewEntity != nil {
@@ -66,8 +65,8 @@ func (se *SyncEntity) SetNilEntity() {
 	se.Entity = nil
 }
 func (se *SyncEntity) OnChannelChange(sv GC.SyncVar, id int) {
-	defer se.channel.ResetJustChanged(SYNCENT_CHAN_FCID, SYNCENT_CHAN_ACTIONS)
-	if se.channel.JustChanged(SYNCENT_CHAN_FCID) {
+	defer se.channel.ResetJustChanged(SYNCENT_CHAN_ENTITY_CREATION, SYNCENT_CHAN_ACTIONS)
+	if se.channel.JustChanged(SYNCENT_CHAN_ENTITY_CREATION) {
 		se.CreateEntFromChan()
 	}else{
 		se.UpdateEntFromChan()
@@ -75,7 +74,7 @@ func (se *SyncEntity) OnChannelChange(sv GC.SyncVar, id int) {
 }
 func (se *SyncEntity) CreateEntFromChan() error {
 	oldE := se.Entity
-	ent, err := se.ef.Get(int(cmp.BytesToUInt16(se.channel.Pipes[SYNCENT_CHAN_FCID])))
+	ent, err := se.ef.LoadEntityFromCreationData(se.channel.Pipes[SYNCENT_CHAN_ENTITY_CREATION])
 	if err != nil {return err}
 	se.Entity = ent
 	se.UpdateEntFromChan()

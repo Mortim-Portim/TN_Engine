@@ -44,11 +44,16 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	if len(data) != OBJ_CREATION_DATA_LENGTH {
 		return nil, ERR_WRONG_BYTE_LENGTH
 	}
-	fcID := int(cmp.BytesToInt16(data[16:18]))
+	fcID := int(cmp.BytesToInt16(data[0:2]))
 	e, err := cf.Get(fcID)
 	if err != nil {return nil, err}
-	e.xPos = cmp.BytesToInt64(data[0:8])
-	e.yPos = cmp.BytesToInt64(data[8:16])
+	e.PosFromBytes(data[2:8])
+	e.orientation.FromByte(data[8])
+	e.neworientation.FromByte(data[9])
+	e.movingFrames = int(cmp.BytesToInt16(data[10:12]))
+	e.movedFrames = int(cmp.BytesToInt16(data[12:14]))
+	e.movingStepSize = cmp.BytesToFloat64(data[14:22])
+	e.setAnim(uint8(data[22]))
 	return e, nil
 }
 func (cf *EntityFactory) Print() (out string) {
