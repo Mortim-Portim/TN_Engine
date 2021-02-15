@@ -42,11 +42,10 @@ func (sp *SyncPlayer) SetPlayer(pl *Player) {
 	}
 }
 func (sp *SyncPlayer) SetNilPlayer() {
-	oldE := sp.Player
-	sp.Player = nil
 	if sp.OnNewPlayer != nil {
-		sp.OnNewPlayer(sp, oldE, sp.Player)
+		sp.OnNewPlayer(sp, sp.Player, nil)
 	}
+	sp.Player = nil
 }
 //Is called when the channel receives
 func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {

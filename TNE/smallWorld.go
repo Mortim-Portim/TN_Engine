@@ -151,7 +151,7 @@ func (sm *SmallWorld) Print() (out string) {
 func (sm *SmallWorld) HasNewActivePlayer() (bool, *Player) {
 	if sm.newPlayer {
 		sm.newPlayer = false
-		if sm.ActivePlayer.Player != nil {
+		if sm.ActivePlayer.HasPlayer() {
 			return true, sm.ActivePlayer.Player
 		}
 	}
@@ -221,26 +221,26 @@ func (sm *SmallWorld) ReassignAllEntities() {
 	}
 }
 func (sm *SmallWorld) StandardOnEntityChange(se interface{}, oldE, newE GE.Drawable){
-	fmt.Printf("Changing Entity: %p\n", se)
 	if sm.HasWorldStruct() {
-		if fmt.Sprintf("%p", oldE) != "0x0" {
-			fmt.Printf("Removing %p\n", oldE)
+		if !IsInterfaceNil(oldE) {
 			err, dp := sm.Struct.Add_Drawables.Remove(oldE)
 			if err == nil {
 				sm.Struct.Add_Drawables = dp
+			}else{
+				fmt.Printf("Error removing %p: %v\n", oldE, err)
 			}
-			fmt.Println(([]GE.Drawable)(*sm.Struct.Add_Drawables))
 		}
-		if fmt.Sprintf("%p", newE) != "0x0" {
-			fmt.Printf("Adding %p\n", newE)
+		if !IsInterfaceNil(newE) {
 			sm.Struct.Add_Drawables.Add(newE)
-			fmt.Println(([]GE.Drawable)(*sm.Struct.Add_Drawables))
 		}
 	}
 }
+func IsInterfaceNil(i interface{}) bool {
+	pnt := fmt.Sprintf("%p",i)
+	return pnt == "0x0" || i == nil
+}
 func (sm *SmallWorld) OnActivePlayerChange(se interface{}, oldE, newE GE.Drawable) {
 	sm.newPlayer = true
-	fmt.Printf("Changing Player: %p\n", se)
 	sm.StandardOnEntityChange(se, oldE, newE)
 }
 func (sm *SmallWorld) RegisterOnEntityChangeListeners() {

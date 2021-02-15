@@ -60,11 +60,10 @@ func (se *SyncEntity) SetEntity(e *Entity) error {
 	return nil
 }
 func (se *SyncEntity) SetNilEntity() {
-	oldE := se.Entity
-	se.Entity = nil
 	if se.OnNewEntity != nil {
-		se.OnNewEntity(se, oldE, nil)
+		se.OnNewEntity(se, se.Entity, nil)
 	}
+	se.Entity = nil
 }
 func (se *SyncEntity) OnChannelChange(sv GC.SyncVar, id int) {
 	defer se.channel.ResetJustChanged(SYNCENT_CHAN_FCID, SYNCENT_CHAN_ACTIONS)
