@@ -67,7 +67,11 @@ type Character struct {
 	Attributes    []int8
 	Proficiencies []int8
 }
-
+func (char *Character) Copy() *Character {
+	if char == nil {return nil}
+	return LoadChar(char.ToByte())
+}
+const CHARACTER_BYTES_LENGTH = 23
 func (char *Character) ToByte() []byte {
 	byteattrib := make([]byte, len(char.Attributes))
 	for i, attrib := range char.Attributes {

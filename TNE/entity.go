@@ -34,6 +34,7 @@ func (e *Entity) Copy() (e2 *Entity) {
 		showHealth: e.showHealth,
 		showStamina: e.showStamina,
 		showMana: e.showMana,
+		char: e.char.Copy(),
 	}
 	e2.Init()
 	return 
@@ -87,11 +88,14 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 		e.drawBar(screen, 2, color.RGBA{0,0,255,255}, leftTopX, leftTopY, xStart, yStart, sqSize, e.ManaPercent())
 	}
 }
-const ENTITY_CREATION_DATA_LENGTH = 48
+const ENTITY_CREATION_DATA_LENGTH = 48+CHARACTER_BYTES_LENGTH
 func (e *Entity) GetCreationData() (bs []byte) {
 	bs = e.Eobj.GetCreationData()
 	copy(bs[23:47], cmp.Float32sToBytes(e.MaxHealth(), e.MaxStamina(), e.MaxMana(), e.Health(), e.Stamina(), e.Mana()))
 	bs[47] = cmp.BoolsToBytes(e.DoesShowHealth(), e.DoesShowStamina(), e.DoesShowMana())[0]
+	if e.char != nil {
+		copy(bs[48:48+CHARACTER_BYTES_LENGTH], e.char.ToByte())
+	}
 	return
 }
 func (e *Entity) OnEobjUpdate(eo *Eobj, w *World) {
