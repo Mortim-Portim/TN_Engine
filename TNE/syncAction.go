@@ -86,7 +86,7 @@ func (as *ActionStack) ApplyOnEobj(e *Entity) {
 				e.neworientation.FromByte(data[0])
 				return 1
 			case SyncAction_KeepMoving:
-				e.keepMoving = cmp.BytesToBool(data[0:1])[0]
+				e.keepMoving = cmp.BytesToBools(data[0:1])[0]
 				return 1
 			case SyncAction_ManualAnimationChange:
 				e.setAnim(uint8(data[0]))

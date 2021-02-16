@@ -41,7 +41,7 @@ type EntityFactory struct {
 	ResetConfirm *chan bool
 }
 func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
-	if len(data) != OBJ_CREATION_DATA_LENGTH {
+	if len(data) != ENTITY_CREATION_DATA_LENGTH {
 		return nil, ERR_WRONG_BYTE_LENGTH
 	}
 	fcID := int(cmp.BytesToInt16(data[0:2]))
@@ -54,6 +54,17 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	e.movedFrames = int(cmp.BytesToInt16(data[12:14]))
 	e.movingStepSize = cmp.BytesToFloat64(data[14:22])
 	e.setAnim(uint8(data[22]))
+	vals := cmp.BytesToFloat32s(data[23:47])
+	e.SetMaxHealth(vals[0])
+	e.SetMaxStamina(vals[1])
+	e.SetMaxMana(vals[2])
+	e.SetHealth(vals[3])
+	e.SetStamina(vals[4])
+	e.SetMana(vals[5])
+	shows := cmp.BytesToBools(data[47:48])
+	e.ShowHealth(shows[0])
+	e.ShowStamina(shows[1])
+	e.ShowMana(shows[2])
 	return e, nil
 }
 func (cf *EntityFactory) Print() (out string) {

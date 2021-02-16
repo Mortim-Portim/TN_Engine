@@ -148,7 +148,16 @@ func (e *Eobj) SetBottomRightTo(x, y float64) {
 //Updates the Orientation animation, ONLY call this if really necassary
 func (e *Eobj) UpdateOrientationAnim() {
 	idx := e.orientation.ID
-	if idx >= 0 && idx != ENTITY_ORIENTATION_U && idx != ENTITY_ORIENTATION_D {
+	if idx == ENTITY_ORIENTATION_U || idx == ENTITY_ORIENTATION_D {
+		idx = int(e.currentAnim)
+		if idx >= 2 {
+			idx -= 2
+		}
+		if e.isMoving {
+			idx += 2
+		}
+		e.setAnim(uint8(idx))
+	}else if idx >= 0 {
 		if idx == ENTITY_ORIENTATION_LU || idx == ENTITY_ORIENTATION_LD {
 			idx = ENTITY_ORIENTATION_L
 		}
@@ -212,9 +221,8 @@ func (e *Eobj) PosToBytes() []byte {
 	x,y,dx,dy := e.getPosIntPBytes()
 	return append(append(cmp.Int16ToBytes(int16(x)), cmp.Int16ToBytes(int16(y))...), byte(dx), byte(dy))
 }
-const OBJ_CREATION_DATA_LENGTH = 23
 func (e *Eobj) GetCreationData() (bs []byte) {
-	bs = make([]byte, OBJ_CREATION_DATA_LENGTH)
+	bs = make([]byte, ENTITY_CREATION_DATA_LENGTH)
 	copy(bs[0:2], cmp.Int16ToBytes(e.factoryCreationId))
 	copy(bs[2:8], e.PosToBytes())
 	bs[8] = e.orientation.ToByte()
