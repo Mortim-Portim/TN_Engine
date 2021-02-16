@@ -61,26 +61,26 @@ type Race struct {
 }
 
 type Character struct {
-	name          string
-	class         *Class
-	race          *Race
-	attributes    []int8
-	proficiencies []int8
+	Name          string
+	Class         *Class
+	Race          *Race
+	Attributes    []int8
+	Proficiencies []int8
 }
 
 func (char *Character) ToByte() []byte {
-	byteattrib := make([]byte, len(char.attributes))
-	for i, attrib := range char.attributes {
+	byteattrib := make([]byte, len(char.Attributes))
+	for i, attrib := range char.Attributes {
 		byteattrib[i] = byte(attrib)
 	}
 
-	byteprof := make([]byte, len(char.proficiencies))
-	for i, prof := range char.proficiencies {
+	byteprof := make([]byte, len(char.Proficiencies))
+	for i, prof := range char.Proficiencies {
 		byteprof[i] = byte(prof)
 	}
 
 	bytearray := make([]byte, 0)
-	bytearray = append(bytearray, byte(char.race.id), byte(char.class.id))
+	bytearray = append(bytearray, byte(char.Race.id), byte(char.Class.id))
 	bytearray = append(bytearray, byteattrib...)
 	bytearray = append(bytearray, byteprof...)
 	return bytearray
@@ -100,7 +100,7 @@ func LoadChar(bytes []byte) Character {
 		proficiencies[i] = int8(bytes[i+6])
 	}
 
-	char := Character{race: race, class: class, attributes: attrib, proficiencies: proficiencies}
+	char := Character{Race: race, Class: class, Attributes: attrib, Proficiencies: proficiencies}
 
 	return char
 }
