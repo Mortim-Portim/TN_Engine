@@ -14,6 +14,8 @@ type EntityUpdater interface {
 type Entity struct {
 	*Eobj
 	
+	char *Character
+	
 	maxHealth, maxStamina, maxMana float32
 	health, stamina, mana float32
 	showHealth, showStamina, showMana bool

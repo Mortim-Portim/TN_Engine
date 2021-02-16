@@ -86,7 +86,7 @@ func (char *Character) ToByte() []byte {
 	return bytearray
 }
 
-func LoadChar(bytes []byte) Character {
+func LoadChar(bytes []byte) *Character {
 	race := Races[bytes[0]]
 	class := Classes[bytes[1]]
 
@@ -100,7 +100,7 @@ func LoadChar(bytes []byte) Character {
 		proficiencies[i] = int8(bytes[i+6])
 	}
 
-	char := Character{Race: race, Class: class, Attributes: attrib, Proficiencies: proficiencies}
+	char := &Character{Race: race, Class: class, Attributes: attrib, Proficiencies: proficiencies}
 
 	return char
 }
