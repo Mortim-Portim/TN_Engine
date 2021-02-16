@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	ERR_CHAN_IS_EMPTY = 			"Channel is empty: %v"
-	ERR_SYNCPLAYER_CREATION = 		"Cannot create syncplayer with mt: %v, data: %v"
+	ERR_CHAN_IS_EMPTY       = "Channel is empty: %v"
+	ERR_SYNCPLAYER_CREATION = "Cannot create syncplayer with mt: %v, data: %v"
 )
 
 // +-+-+-+-+-+-+-+-+-+-+
@@ -16,25 +16,27 @@ const (
 // +-+-+-+-+-+-+-+-+-+-+
 type SyncPlayer struct {
 	*Player
-	Se *SyncEntity
+	Se        *SyncEntity
 	ACIDStart int
-	ACIDs []int
-	
+	ACIDs     []int
+
 	OnNewPlayer func(se interface{}, oldE, newE GE.Drawable)
 }
+
 func (sp *SyncPlayer) UpdateSyncVars(m GC.Handler) {
 	m.UpdateSyncVarsWithACIDs(sp.ACIDs...)
 }
 func (sp *SyncPlayer) HasPlayer() bool {
 	return sp.Player != nil
 }
+
 //Sets the player and syncronizes it, i
 func (sp *SyncPlayer) SetPlayer(pl *Player) {
 	oldE := sp.Player
 	sp.Player = pl
 	if pl == nil {
 		sp.SendToChannel(SYNCENT_CHAN_PLAYER_CREATION, []byte{0}, true)
-	}else{
+	} else {
 		sp.CreateVarsFromPlayer()
 	}
 	if sp.OnNewPlayer != nil {
@@ -47,6 +49,7 @@ func (sp *SyncPlayer) SetNilPlayer() {
 	}
 	sp.Player = nil
 }
+
 //Is called when the channel receives
 func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 	defer sp.Se.channel.ResetJustChanged(SYNCENT_CHAN_PLAYER_CREATION, SYNCENT_CHAN_PLAYER_CREATION)
@@ -55,7 +58,7 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 		data := sp.Se.channel.Pipes[SYNCENT_CHAN_PLAYER_CREATION]
 		if len(data) == 1 {
 			sp.SetNilPlayer()
-		}else{
+		} else {
 			sp.CreatePlayerFromVars(data)
 		}
 	}
@@ -63,20 +66,28 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 func (sp *SyncPlayer) CreatePlayerFromVars(data []byte) error {
 	oldE := sp.Player
 	err := sp.Se.CreateEntFromChan()
-	if err != nil {return err}
+	if err != nil {
+		return err
+	}
 	err, sp.Player = GetPlayerByCreationData(data)
-	if err != nil {return err}
-	sp.Player.Race.Entity = sp.Se.Entity
+	if err != nil {
+		return err
+	}
+	sp.Player.Entity = sp.Se.Entity
 	if sp.OnNewPlayer != nil {
 		sp.OnNewPlayer(sp, oldE, sp.Player)
 	}
 	return err
 }
 func (sp *SyncPlayer) CreateVarsFromPlayer() error {
-	err := sp.Se.SetEntity(sp.Player.Race.Entity)
-	if err != nil {return err}
+	err := sp.Se.SetEntity(sp.Player.Entity)
+	if err != nil {
+		return err
+	}
 	data := sp.Player.GetCreationData()
-	if len(data) == 0 {data = []byte{0,0}}
+	if len(data) == 0 {
+		data = []byte{0, 0}
+	}
 	sp.SendToChannel(SYNCENT_CHAN_PLAYER_CREATION, data, true)
 	return nil
 }
@@ -86,19 +97,21 @@ func (sp *SyncPlayer) UpdatePlayerFromChan() {
 func (sp *SyncPlayer) UpdateChanFromPlayer() {
 	sp.Se.UpdateChanFromEnt()
 }
+
 //Sends the msg as message type msgT to the syncchannel
 func (sp *SyncPlayer) SendToChannel(idx int, msg []byte, force bool) bool {
 	return sp.Se.SendToChannel(idx, msg, force)
 }
+
 //Returns an emtpy new SyncPlayer struct, that can build its own player the EntityFactory and Creation data
 func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory) (sp *SyncPlayer) {
 	sp = &SyncPlayer{
-		ACIDStart:ACIDStart,
-		Se:GetNewSyncEntity(ACIDStart, ef),
+		ACIDStart: ACIDStart,
+		Se:        GetNewSyncEntity(ACIDStart, ef),
 	}
 	sp.ACIDs = make([]int, SYNCVARS_PER_PLAYER)
-	for i,_ := range(sp.ACIDs) {
-		sp.ACIDs[i] = ACIDStart+i
+	for i, _ := range sp.ACIDs {
+		sp.ACIDs[i] = ACIDStart + i
 	}
 	return
 }
