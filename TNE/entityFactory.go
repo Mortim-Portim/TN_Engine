@@ -12,11 +12,11 @@ const(
 )
 
 //returns a entity factory that loads all entities from a specific path, prepare specifies the number of entities to be prepared
-func GetEntityFactory(path string, frameCounter *int, prepare int, c *chan bool) (*EntityFactory, error) {
+func GetEntityFactory(path string, frameCounter *int, prepare int) (*EntityFactory, error) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
-	CF := &EntityFactory{frameCounter: frameCounter, prepare: prepare, ResetConfirm: c}
+	CF := &EntityFactory{frameCounter: frameCounter, prepare: prepare}
 	CF.rootPath = path
 	idx := &GE.List{}
 	idx.LoadFromFile(path + INDEX_FILE_NAME)
@@ -38,7 +38,6 @@ type EntityFactory struct {
 	prepared     [][]*Entity
 	prepare      int
 	frameCounter *int
-	ResetConfirm *chan bool
 }
 func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
 	fcID := int(cmp.BytesToInt16(data[0:2]))
@@ -99,7 +98,7 @@ func (cf *EntityFactory) SetUpdateFunctionList(fncs []EntityUpdater) error {
 func (cf *EntityFactory) Load() error {
 	cf.entities = make([]*Entity, len(cf.crNames))
 	for i, name := range cf.crNames {
-		ent, err := LoadEntity(cf.rootPath+name, cf.frameCounter, cf.ResetConfirm)
+		ent, err := LoadEntity(cf.rootPath+name, cf.frameCounter)
 		if err != nil {
 			cf.entities = cf.entities[:i]
 			return err

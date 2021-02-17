@@ -72,10 +72,19 @@ type World struct {
 
 	Ef *EntityFactory
 
+	ResetConfirm *chan bool
+
 	Path         string
 	FrameCounter *int
 }
-
+func (w *World) ResetActions() {
+	for _,pl := range(w.Players) {
+		pl.Actions().Reset()
+	}
+	for _,ent := range(w.Entities) {
+		ent.Actions().Reset()
+	}
+}
 func (w *World) Print() (out string) {
 	out = fmt.Sprintf("SHOULD print Information about World\n")
 	return
@@ -176,6 +185,7 @@ func (w *World) AddEntity(e *Entity) error {
 	cX,cY := GetChunkOfEntity(e)
 	idx, err := w.ChunkMat.Get(cX, cY)
 	if err != nil {return err}
+	e.Actions().ManualReset = true
 	w.Entities = append(w.Entities, e)
 	return w.Chunks[idx].Add(e)
 }
@@ -200,6 +210,7 @@ Adds a player
 func (w *World) AddPlayer(p *Player) {
 	idx := w.indexOfPlayer(p)
 	if idx < 0 {
+		p.Actions().ManualReset = true
 		w.Players = append(w.Players, p)
 	}
 }

@@ -25,7 +25,7 @@ type SyncEntity struct {
 }
 
 func (se *SyncEntity) UpdateSyncVars(m GC.Handler) {
-	m.UpdateSyncVarsWithACIDs(se.ACIDs...)
+	m.UpdateSyncVarsWithACIDsBuffered(se.ACIDs...)
 }
 func (se *SyncEntity) HasEntity() bool {
 	return se.Entity != nil
@@ -118,7 +118,7 @@ func (se *SyncEntity) GetSyncVars(mp map[int]GC.SyncVar) {
 }
 //Registers all syncVars to the server
 func (se *SyncEntity) RegisterSyncVars(m *GC.ServerManager, clients ...*ws.Conn) {
-	m.RegisterSyncVar(se.channel, 	se.ACIDStart+0, clients...)
+	m.RegisterSyncVar(false, se.channel, se.ACIDStart+0, clients...)
 }
 //Gets all syncVars from the Client
 func (se *SyncEntity) GetRegisterdSyncVars(m *GC.ClientManager) {

@@ -17,9 +17,9 @@ Channel communication:
 Dont forget do set FrameCounter on Server and assign WorldStructure
 **/
 
-func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path string, c *chan bool) (sm *SmallWorld, err error) {
+func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path string) (sm *SmallWorld, err error) {
 	fc := 0
-	ef, err := GetEntityFactory(entity_path, &fc, 3, c)
+	ef, err := GetEntityFactory(entity_path, &fc, 3)
 	sm = &SmallWorld{Ents:make([]*SyncEntity, SYNCENTITIES_PREP),
 					 Plys:make([]*SyncPlayer, SYNCPLAYER_PREP),
 					 SyncFrame:GC.CreateSyncInt64(0),
@@ -60,21 +60,6 @@ func (sm *SmallWorld) Clear() {
 	sm.Ents = make([]*SyncEntity, SYNCENTITIES_PREP)
 	sm.Plys = make([]*SyncPlayer, SYNCPLAYER_PREP)
 	sm.ActivePlayer = GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef)
-}
-func (sm *SmallWorld) SetResetConfirms(sr *chan bool) {
-	if sm.ActivePlayer.HasPlayer() {
-		sm.ActivePlayer.Player.Actions().ResetConfirm = sr
-	}
-	for _,pl := range(sm.Plys) {
-		if pl.HasPlayer() {
-			pl.Player.Actions().ResetConfirm = sr
-		}
-	}
-	for _,ent := range(sm.Ents) {
-		if ent.HasEntity() {
-			ent.Entity.Actions().ResetConfirm = sr
-		}
-	}
 }
 type SmallWorld struct {
 	X,Y,W,H float64
@@ -288,7 +273,8 @@ func (sm *SmallWorld) Register(m *GC.ServerManager, client *ws.Conn) {
 	AllSVs[WorldLightLevelChan_ACID] = sm.SyncLightLevel
 	AllSVs[WorldStructChan_ACID] = sm.WorldChan
 	//m.RegisterOnChangeFunc(WorldChannel_ACID, []func(GC.SyncVar, int){sm.OnChannelChange}, clients...)
-	m.RegisterSyncVars(AllSVs, client)
+	m.RegisterSyncVars(true, AllSVs, client)
+	m.Server.WaitForConfirmation(client)
 	sm.ActivePlayer.RegisterOnChange(m.Handler[client])
 	sm.ActivePlayer.OnNewPlayer = sm.OnActivePlayerChange
 }

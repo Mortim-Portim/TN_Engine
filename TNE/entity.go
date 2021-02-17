@@ -111,8 +111,8 @@ func (e *Entity) Init() {
 		e.Eobj.RegisterUpdateFunc(e.OnEobjUpdate)
 	}
 }
-func LoadEntity(path string, frameCounter *int, c *chan bool) (*Entity, error) {
-	eo, err := LoadEobj(path, frameCounter, c)
+func LoadEntity(path string, frameCounter *int) (*Entity, error) {
+	eo, err := LoadEobj(path, frameCounter)
 	if err != nil {return nil,err}
 	e := &Entity{Eobj:eo}
 	e.Init()

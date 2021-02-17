@@ -12,14 +12,14 @@ const (
 	SyncAction_ManualAnimationChange
 	SyncAction_Position
 )
-func NewActionStack(c *chan bool, data ...byte) *ActionStack {
+func NewActionStack(data ...byte) *ActionStack {
 	if len(data) == 0 {data = []byte{}}
-	return &ActionStack{data, c, false}
+	as := &ActionStack{data, false}
+	return as
 }
 type ActionStack struct {
 	data []byte
-	ResetConfirm *chan bool
-	waitingForReset bool
+	ManualReset bool
 }
 func (as *ActionStack) Print() (out string) {
 	as.iterate(func(t byte, data []byte)int{
@@ -49,23 +49,11 @@ func (as *ActionStack) Print() (out string) {
 	return
 }
 func (as *ActionStack) Copy() (as2 *ActionStack) {
-	as2 = &ActionStack{make([]byte, len(as.data)), as.ResetConfirm, false}
+	as2 = &ActionStack{make([]byte, len(as.data)), as.ManualReset}
 	copy(as2.data, as.data)
 	return
 }
-func (as *ActionStack) WaitForReset() {
-	if as.ResetConfirm == nil {
-		as.reset()
-	}else if !as.waitingForReset {
-		go func() {
-			<-*as.ResetConfirm
-			as.reset()
-			as.waitingForReset = false
-		}()
-		as.waitingForReset = true
-	}
-}
-func (as *ActionStack) reset() {
+func (as *ActionStack) Reset() {
 	as.data = []byte{}
 }
 func (as *ActionStack) ApplyOnEobj(e *Entity) {
@@ -104,7 +92,9 @@ func (as *ActionStack) SetAll(bs []byte) {
 }
 func (as *ActionStack) GetAll() (bs []byte) {
 	bs = as.data
-	as.WaitForReset()
+	if !as.ManualReset {
+		as.Reset()
+	}
 	return
 }
 func (as *ActionStack) iterate(fnc func(byte, []byte)int) {

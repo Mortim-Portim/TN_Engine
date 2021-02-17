@@ -24,7 +24,7 @@ type SyncPlayer struct {
 }
 
 func (sp *SyncPlayer) UpdateSyncVars(m GC.Handler) {
-	m.UpdateSyncVarsWithACIDs(sp.ACIDs...)
+	m.UpdateSyncVarsWithACIDsBuffered(sp.ACIDs...)
 }
 func (sp *SyncPlayer) HasPlayer() bool {
 	return sp.Player != nil

@@ -287,13 +287,13 @@ func FloatPosToIntPos(fx, fy float64) (int, int) {
 Loads a Eobj from a directory that contains DayNightAnims with the names listed in CREATURE_ANIM_NAMES
 Also a WOBJ.txt file is needed, that describes the Attributes of the Eobj
 **/
-func LoadEobj(path string, frameCounter *int, c *chan bool) (*Eobj, error) {
+func LoadEobj(path string, frameCounter *int) (*Eobj, error) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
 	pathS := strings.Split(path, "/")
 	name := pathS[len(pathS)-2]
-	e := &Eobj{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), actions: NewActionStack(c)}
+	e := &Eobj{frame: frameCounter, anims: make([]*GE.DayNightAnim, 0), actions: NewActionStack()}
 	
 	idx := &GE.List{}
 	idx.LoadFromFile(path + INDEX_FILE_NAME)
