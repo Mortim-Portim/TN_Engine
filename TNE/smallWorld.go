@@ -231,7 +231,7 @@ func (sm *SmallWorld) StandardOnEntityChange(se interface{}, oldE, newE GE.Drawa
 			}
 		}
 		if !IsInterfaceNil(newE) {
-			sm.Struct.Add_Drawables.Add(newE)
+			sm.Struct.Add_Drawables = sm.Struct.Add_Drawables.Add(newE)
 		}
 	}
 }

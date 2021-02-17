@@ -37,7 +37,10 @@ func (sp *SyncPlayer) SetPlayer(pl *Player) {
 	if pl == nil {
 		sp.SendToChannel(SYNCENT_CHAN_PLAYER_CREATION, []byte{0}, true)
 	} else {
-		sp.CreateVarsFromPlayer()
+		err := sp.CreateVarsFromPlayer()
+		if err != nil {
+			panic(err)
+		}
 	}
 	if sp.OnNewPlayer != nil {
 		sp.OnNewPlayer(sp, oldE, sp.Player)
@@ -56,10 +59,13 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 	sp.Se.OnChannelChange(sv, id)
 	if sp.Se.channel.JustChanged(SYNCENT_CHAN_PLAYER_CREATION) {
 		data := sp.Se.channel.Pipes[SYNCENT_CHAN_PLAYER_CREATION]
-		if len(data) == 1 {
+		if data[0] == 0 {
 			sp.SetNilPlayer()
-		} else {
-			sp.CreatePlayerFromVars(data)
+		}else if data[0] == 1 {
+			err := sp.CreatePlayerFromVars(data[1:])
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
@@ -69,10 +75,11 @@ func (sp *SyncPlayer) CreatePlayerFromVars(data []byte) error {
 	if err != nil {
 		return err
 	}
-	err, sp.Player = GetPlayerByCreationData(data)
+	pl, err := GetPlayerByCreationData(data)
 	if err != nil {
 		return err
 	}
+	sp.Player = pl
 	sp.Player.Entity = sp.Se.Entity
 	if sp.OnNewPlayer != nil {
 		sp.OnNewPlayer(sp, oldE, sp.Player)
@@ -85,10 +92,7 @@ func (sp *SyncPlayer) CreateVarsFromPlayer() error {
 		return err
 	}
 	data := sp.Player.GetCreationData()
-	if len(data) == 0 {
-		data = []byte{0, 0}
-	}
-	sp.SendToChannel(SYNCENT_CHAN_PLAYER_CREATION, data, true)
+	sp.SendToChannel(SYNCENT_CHAN_PLAYER_CREATION, append([]byte{1}, data...), true)
 	return nil
 }
 func (sp *SyncPlayer) UpdatePlayerFromChan() {

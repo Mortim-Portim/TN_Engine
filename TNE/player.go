@@ -20,10 +20,10 @@ func (p *Player) Move() {
 	p.Entity.Move(0.1,1)
 }
 func (p *Player) GetCreationData() (bs []byte) {
-	return
+	return []byte{24,46,88,24,66}
 }
-func GetPlayerByCreationData(bs []byte) (error, *Player) {
-	return nil, &Player{Entity:&Entity{}}
+func GetPlayerByCreationData(bs []byte) (*Player, error) {
+	return &Player{Entity:&Entity{}}, nil
 }
 func (p *Player) Copy() (p2 *Player) {
 	p2 = &Player{Entity:p.Entity.Copy()}

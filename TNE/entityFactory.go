@@ -41,9 +41,6 @@ type EntityFactory struct {
 	ResetConfirm *chan bool
 }
 func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
-	if len(data) != ENTITY_CREATION_DATA_LENGTH {
-		return nil, ERR_WRONG_BYTE_LENGTH
-	}
 	fcID := int(cmp.BytesToInt16(data[0:2]))
 	e, err := cf.Get(fcID)
 	if err != nil {return nil, err}
