@@ -87,6 +87,12 @@ func (as *ActionStack) ApplyOnEobj(e *Entity) {
 	})
 	//as.WaitForReset()
 }
+func (as *ActionStack) AppendAndApply(bs []byte, e *Entity) {
+	old_data := as.data
+	as.SetAll(bs)
+	as.ApplyOnEobj(e)
+	as.SetAll(append(old_data, bs...))
+}
 func (as *ActionStack) SetAll(bs []byte) {
 	as.data = bs
 }

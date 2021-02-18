@@ -3,6 +3,7 @@ package TNE
 import (
 	"fmt"
 	"math"
+	"time"
 	"github.com/mortim-portim/GraphEng/GE"
 )
 
@@ -85,18 +86,19 @@ func (w *World) ResetActions() {
 		ent.Actions().Reset()
 	}
 }
-func (w *World) Print() (out string) {
-	out = fmt.Sprintf("SHOULD print Information about World\n")
-	return
-}
-func (w *World) PrintPlayers() (out string) {
+func (w *World) Print(ents bool) (out string, c int) {
+	out = fmt.Sprintf("%v: ", *w.FrameCounter)
 	for _,pl := range(w.Players) {
 		x,y,_ := pl.GetPos()
-		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", pl.Entity, x, y, pl.Entity.Actions().Print())
+		out += fmt.Sprintf("(P)(%p)|%0.2f, %0.2f, %s|", pl, x, y, pl.Entity.Actions().Print())
+		c ++
 	}
-	for _,ent := range(w.Entities) {
-		x,y,_ := ent.GetPos()
-		out += fmt.Sprintf("(%p)|%0.2f, %0.2f, %s|", ent, x, y, ent.Actions().Print())
+	if ents {
+		for _,ent := range(w.Entities) {
+			x,y,_ := ent.GetPos()
+			out += fmt.Sprintf("(E)(%p)|%0.2f, %0.2f, %s|", ent, x, y, ent.Actions().Print())
+			c ++
+		}
 	}
 	return
 }
@@ -112,8 +114,8 @@ func (w *World) UpdateAllPos() {
 /**
 Updates the lightlevel and applies raycasting if necassary
 **/
-func (w *World) UpdateLights(ticks float64) {
-	w.Structure.UpdateLightLevel(ticks)
+func (w *World) UpdateLights(t time.Duration) {
+	w.Structure.UpdateTime(t)
 	w.Structure.UpdateAllLightsIfNecassary()
 }
 /**

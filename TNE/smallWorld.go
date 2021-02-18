@@ -129,8 +129,44 @@ func (sm *SmallWorld) UpdateAll(server bool) {
 		}
 	}
 }
-func (sm *SmallWorld) Print() (out string) {
-	out = fmt.Sprintf("SHOULD print information about the smallWorld")
+func (sm *SmallWorld) ResetActions() {
+	if sm.ActivePlayer.HasPlayer() {
+		sm.ActivePlayer.Player.Actions().Reset()
+	}
+	for _,pl := range(sm.Plys) {
+		if pl.HasPlayer() {
+			pl.Player.Actions().Reset()
+		}
+	}
+	for _,ent := range(sm.Ents) {
+		if ent.HasEntity() {
+			ent.Entity.Actions().Reset()
+		}
+	}
+}
+func (sm *SmallWorld) Print(ents bool) (out string, c int) {
+	out = fmt.Sprintf("%v: ", *sm.FrameCounter)
+	if sm.ActivePlayer.HasPlayer() {
+		x,y,_ := sm.ActivePlayer.Player.GetPos()
+		out += fmt.Sprintf("(AP)(%p)|%0.2f, %0.2f, %s|", sm.ActivePlayer.Player, x, y, sm.ActivePlayer.Player.Entity.Actions().Print())
+		c ++
+	}
+	for _,pl := range(sm.Plys) {
+		if pl.HasPlayer() {
+			x,y,_ := pl.Player.GetPos()
+			out += fmt.Sprintf("(P)(%p)|%0.2f, %0.2f, %s|", pl.Player, x, y, pl.Player.Entity.Actions().Print())
+			c ++
+		}
+	}
+	if ents {
+		for _,ent := range(sm.Ents) {
+			if ent.HasEntity() {
+				x,y,_ := ent.Entity.GetPos()
+				out += fmt.Sprintf("(E)(%p)|%0.2f, %0.2f, %s|", ent.Entity, x, y, ent.Entity.Actions().Print())
+				c ++
+			}
+		}
+	}
 	return
 }
 func (sm *SmallWorld) HasNewActivePlayer() (bool, *Player) {

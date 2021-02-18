@@ -95,8 +95,7 @@ func (se *SyncEntity) UpdateChanFromEnt() {
 func (se *SyncEntity) UpdateEntFromChan() {
 	if se.HasEntity() {
 		if se.channel.JustChanged(SYNCENT_CHAN_ACTIONS) {
-			se.Entity.Actions().SetAll(se.channel.Pipes[SYNCENT_CHAN_ACTIONS])
-			se.Entity.Actions().ApplyOnEobj(se.Entity)
+			se.Entity.Actions().AppendAndApply(se.channel.Pipes[SYNCENT_CHAN_ACTIONS], se.Entity)
 		}
 	}
 }
