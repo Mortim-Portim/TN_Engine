@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/mortim-portim/GraphEng/GE"
+	//"github.com/mortim-portim/GraphEng/GE"
 )
 
 type EnupPassive struct {
@@ -39,7 +39,7 @@ func (enup *EnupPassive) NewRoute(e *Entity, world *World) {
 
 		fmt.Println([2]int{int(e.xPos), int(e.yPos)})
 
-		enup.nodes = GE.FindPathMat(world.Structure.ObjMat, [2]int{int(e.xPos), int(e.yPos)}, [2]int{10, 10}, false)
+		//enup.nodes = GE.FindPathMat(world.Structure.ObjMat, [2]int{int(e.xPos), int(e.yPos)}, [2]int{10, 10}, false)
 
 		if len(enup.nodes) != 0 {
 			break

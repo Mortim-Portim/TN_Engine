@@ -14,7 +14,7 @@ type EntityUpdater interface {
 type Entity struct {
 	*Eobj
 	
-	char *Character
+	Char *Character
 	
 	maxHealth, maxStamina, maxMana float32
 	health, stamina, mana float32
@@ -34,7 +34,7 @@ func (e *Entity) Copy() (e2 *Entity) {
 		showHealth: e.showHealth,
 		showStamina: e.showStamina,
 		showMana: e.showMana,
-		char: e.char.Copy(),
+		Char: e.Char.Copy(),
 	}
 	e2.Init()
 	return 
@@ -93,8 +93,8 @@ func (e *Entity) GetCreationData() (bs []byte) {
 	bs = e.Eobj.GetCreationData()
 	copy(bs[23:47], cmp.Float32sToBytes(e.MaxHealth(), e.MaxStamina(), e.MaxMana(), e.Health(), e.Stamina(), e.Mana()))
 	bs[47] = cmp.BoolsToBytes(e.DoesShowHealth(), e.DoesShowStamina(), e.DoesShowMana())[0]
-	if e.char != nil {
-		copy(bs[48:48+CHARACTER_BYTES_LENGTH], e.char.ToByte())
+	if e.Char != nil {
+		copy(bs[48:48+CHARACTER_BYTES_LENGTH], e.Char.ToByte())
 	}
 	return
 }

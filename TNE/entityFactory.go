@@ -61,7 +61,7 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	e.ShowHealth(shows[0])
 	e.ShowStamina(shows[1])
 	e.ShowMana(shows[2])
-	e.char,err = LoadChar(data[48:48+CHARACTER_BYTES_LENGTH])
+	e.Char,err = LoadChar(data[48:48+CHARACTER_BYTES_LENGTH])
 	return e, err
 }
 func (cf *EntityFactory) Print() (out string) {
@@ -124,7 +124,12 @@ func (cf *EntityFactory) Prepare() {
 		}
 	}
 }
-
+func (cf *EntityFactory) GetFromCharacter(char *Character) (*Entity, error) {
+	ent, err := cf.GetByName(char.Race.Name)
+	if err != nil {return ent, err}
+	ent.Char = char
+	return ent, nil
+}
 //Slower than Get ~1000ns
 func (cf *EntityFactory) GetByName(name string) (*Entity, error) {
 	if !cf.HasEntityName(name) {
