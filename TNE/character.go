@@ -1,16 +1,61 @@
 package TNE
 
+import (
+	"fmt"
+	"strings"
+)
+
+const ERROR_WRONG_CHAR_VERSION = "Wrong character version: %v"
 var Classes []*Class = []*Class{
-	{"Fighter", 0, []string{"Berserker", "Defender"}},
-	{"Knight", 1, []string{"Heavy Armor", "Combat Rager", "Guard", "Paladin"}},
-	{"Wizard", 2, []string{"Test"}},
-	{"Bard", 3, []string{"Test"}},
-	{"Cleric", 4, []string{"Test"}},
-	{"Druid", 5, []string{"Test"}},
-	{"Ranger", 6, []string{"Test"}},
-	{"Rogue", 7, []string{"Test"}},
-	{"Sorcerer", 8, []string{"Test"}},
+	{"Fighter", 	0, []string{"Berserker", "Defender"}},
+	{"Knight", 		1, []string{"Heavy Armor", "Combat Rager", "Guard", "Paladin"}},
+	{"Wizard", 		2, []string{"Test"}},
+	{"Bard", 		3, []string{"Test"}},
+	{"Cleric", 		4, []string{"Test"}},
+	{"Druid", 		5, []string{"Test"}},
+	{"Ranger", 		6, []string{"Test"}},
+	{"Rogue", 		7, []string{"Test"}},
+	{"Sorcerer", 	8, []string{"Test"}},
 }
+var Races []*Race = []*Race{
+	{"Elv", 		0, []int8{0, 2, 2, 0}, 	[]int8{SCORE_NATURE, SCORE_ACROBATICS, SCORE_PERCEPTION, SCORE_INSIGHT, SCORE_INTELLIGENCE},1, []string{"Wood Elv", "High Elv"}},
+	{"Human", 		1, []int8{1, 1, 1, 1}, 	[]int8{}, 																					4, []string{"Urban Human", "Country-Side Human", "Mountain Tribe"}},
+	{"Half-Elv", 	2, []int8{0, 2, 0, 2}, 	[]int8{SCORE_ACROBATICS, SCORE_PERCEPTION, SCORE_INSIGHT, SCORE_DUNGEONEERING}, 			1, []string{"Dark Elv", "City Elv"}},
+	{"Ork", 		3, []int8{3, 0, 0, 0}, 	[]int8{SCORE_STRENGTH, SCORE_ENDURANCE}, 													1, []string{"Mountain Ork", "Cave Ork"}},
+	{"Goblin", 		4, []int8{-1, 2, 0, 2}, []int8{SCORE_STEALTH, SCORE_THIEVERY, SCORE_ACROBATICS, SCORE_DECEPTION, SCORE_PERCEPTION}, 1, []string{"Ravin Goblin", "Sever Goblin"}},
+	{"Dwarf", 		5, []int8{2, 0, 2, 0}, 	[]int8{SCORE_STRENGTH, SCORE_CRAFTSMANSHIP, SCORE_DUNGEONEERING}, 							1, []string{"Hill Dwarf", "Mountain Dwarf"}},
+	{"Halfling", 	6, []int8{-1, 0, 1, 3}, []int8{SCORE_PERSUASION, SCORE_DECEPTION, SCORE_DUNGEONEERING}, 							1, []string{"Rock Halfling", "Forest Halfling"}},
+}
+const (
+	ABIL_STRENGTH = iota
+	ABIL_DEXTERITY
+	ABIL_INTELLIGENCE
+	ABIL_CHARISMA
+	
+	ABIL_COUNT
+)
+
+const (
+	SCORE_STRENGTH = iota
+	SCORE_DEXTERITY
+	SCORE_INTELLIGENCE
+	SCORE_CHARISMA
+	SCORE_ENDURANCE
+	SCORE_PERSUASION
+	SCORE_DECEPTION
+	SCORE_PERFORMANCE
+	SCORE_INSIGHT
+	SCORE_THIEVERY
+	SCORE_STEALTH
+	SCORE_ACROBATICS
+	SCORE_NATURE
+	SCORE_ARCANA
+	SCORE_PERCEPTION
+	SCORE_CRAFTSMANSHIP
+	SCORE_DUNGEONEERING
+	
+	SCORE_COUNT
+)
 
 type Class struct {
 	Name     string
@@ -18,48 +63,17 @@ type Class struct {
 	Subclass []string //will change later, placeholder
 }
 
-const ABIL_STRENGTH = 0
-const ABIL_DEXTERITY = 1
-const ABIL_INTELLIGENCE = 2
-const ABIL_CHARISMA = 3
-
-const SCORE_STRENGTH = 0
-const SCORE_DEXTERITY = 1
-const SCORE_INTELLIGENCE = 2
-const SCORE_CHARISMA = 3
-const SCORE_ENDURANCE = 4
-const SCORE_PERSUASION = 5
-const SCORE_DECEPTION = 6
-const SCORE_PERFORMANCE = 7
-const SCORE_INSIGHT = 8
-const SCORE_THIEVERY = 9
-const SCORE_STEALTH = 10
-const SCORE_ACROBATICS = 11
-const SCORE_NATURE = 12
-const SCORE_ARCANA = 13
-const SCORE_PERCEPTION = 14
-const SCORE_CRAFTSMANSHIP = 15
-const SCORE_DUNGEONEERING = 16
-
-var Races []*Race = []*Race{
-	{"Elv", 0, []int8{0, 2, 2, 0}, []int{SCORE_NATURE, SCORE_ACROBATICS, SCORE_PERCEPTION, SCORE_INSIGHT, SCORE_INTELLIGENCE}, 1, []string{"Wood Elv", "High Elv"}},
-	{"Human", 1, []int8{1, 1, 1, 1}, []int{}, 4, []string{"Urban Human", "Country-Side Human", "Mountain Tribe"}},
-	{"Half-Elv", 2, []int8{0, 2, 0, 2}, []int{SCORE_ACROBATICS, SCORE_PERCEPTION, SCORE_INSIGHT, SCORE_DUNGEONEERING}, 1, []string{"Dark Elv", "City Elv"}},
-	{"Ork", 3, []int8{3, 0, 0, 0}, []int{SCORE_STRENGTH, SCORE_ENDURANCE}, 1, []string{"Mountain Ork", "Cave Ork"}},
-	{"Goblin", 4, []int8{-1, 2, 0, 2}, []int{SCORE_STEALTH, SCORE_THIEVERY, SCORE_ACROBATICS, SCORE_DECEPTION, SCORE_PERCEPTION}, 1, []string{"Ravin Goblin", "Sever Goblin"}},
-	{"Dwarf", 5, []int8{+2, 0, +2, 0}, []int{SCORE_STRENGTH, SCORE_CRAFTSMANSHIP, SCORE_DUNGEONEERING}, 1, []string{"Hill Dwarf", "Mountain Dwarf"}},
-	{"Halfling", 6, []int8{-1, 0, +1, +3}, []int{SCORE_PERSUASION, SCORE_DECEPTION, SCORE_DUNGEONEERING}, 1, []string{"Rock Halfling", "Forest Halfling"}},
-}
-
+//const MAX_RACE_NAME_LENGTH = 20
 type Race struct {
-	Name       string
-	id         int
-	Attributes []int8
-	Profencies []int
-	Extraprof  int
-	Subraces   []string //will change later, placeholder
+	Name			string
+	id				int
+	Attributes 		[]int8
+	Proficiencies 	[]int8
+	Extraprof 		int
+	Subraces   		[]string //will change later, placeholder
 }
 
+const MAX_CHARACTER_NAME_LENGTH = 20
 type Character struct {
 	Name          string
 	Class         *Class
@@ -67,44 +81,78 @@ type Character struct {
 	Attributes    []int8
 	Proficiencies []int8
 }
+func GetCharacter(name string, raceId, classId int) (char *Character) {
+	char = &Character{
+		Name:			name,
+		Race:			Races[raceId],
+		Class:			Classes[classId],
+		Attributes:		make([]int8, len(Races[raceId].Attributes)),
+		Proficiencies:	make([]int8, len(Races[raceId].Proficiencies)),
+	}
+	copy(char.Attributes, char.Race.Attributes)
+	copy(char.Proficiencies, char.Race.Proficiencies)
+	return
+}
 func (char *Character) Copy() *Character {
 	if char == nil {return nil}
-	return LoadChar(char.ToByte())
+	c, _ := LoadChar(char.ToByte())
+	return c
 }
-const CHARACTER_BYTES_LENGTH = 23
-func (char *Character) ToByte() []byte {
-	byteattrib := make([]byte, len(char.Attributes))
+const CHARACTER_BYTES_LENGTH = ABIL_COUNT+SCORE_COUNT+MAX_CHARACTER_NAME_LENGTH+2+1
+func (char *Character) ToByte() (bs []byte) {
+	bs = make([]byte, CHARACTER_BYTES_LENGTH)
 	for i, attrib := range char.Attributes {
-		byteattrib[i] = byte(attrib)
+		bs[i] = byte(attrib+1)
 	}
-
-	byteprof := make([]byte, len(char.Proficiencies))
 	for i, prof := range char.Proficiencies {
-		byteprof[i] = byte(prof)
+		bs[i+ABIL_COUNT] = byte(prof+1)
 	}
-
-	bytearray := make([]byte, 0)
-	bytearray = append(bytearray, byte(char.Race.id), byte(char.Class.id))
-	bytearray = append(bytearray, byteattrib...)
-	bytearray = append(bytearray, byteprof...)
-	return bytearray
+	idx := ABIL_COUNT+SCORE_COUNT
+	name := char.Name
+	for len(name) < MAX_CHARACTER_NAME_LENGTH {
+		name += " "
+	}
+	copy(bs[idx:idx+MAX_CHARACTER_NAME_LENGTH], []byte(name))
+	idx += MAX_CHARACTER_NAME_LENGTH
+	bs[idx] = 	byte(char.Race.id)
+	bs[idx+1] = byte(char.Class.id)
+	bs[idx+2] = 0
+	return
 }
 
-func LoadChar(bytes []byte) *Character {
-	race := Races[bytes[0]]
-	class := Classes[bytes[1]]
+var CharLoader = map[byte]func([]byte)*Character{
+	0:func(bs []byte)(char *Character){
+		char = &Character{
+			Race:  Races[int(bs[len(bs)-2])],
+			Class: Classes[int(bs[len(bs)-1])],
+			Attributes:		make([]int8, 0),
+			Proficiencies:	make([]int8, 0),
+		}
+		idx := 0
+		for idx < ABIL_COUNT {
+			v := int8(bs[idx])-1
+			if v >= 0 {
+				char.Attributes = append(char.Attributes, v)
+			}
+			idx ++
+		}
+		for idx < ABIL_COUNT+SCORE_COUNT {
+			v := int8(bs[idx])-1
+			if v >= 0 {
+				char.Proficiencies = append(char.Proficiencies, v)
+			}
+			idx ++
+		}
+		char.Name = strings.ReplaceAll(string(bs[idx:idx+MAX_CHARACTER_NAME_LENGTH]), " ", "")
+		return
+	},
+}
 
-	attrib := make([]int8, 4)
-	for i := 0; i < len(attrib); i++ {
-		attrib[i] = int8(bytes[i+2])
+func LoadChar(bs []byte) (*Character, error) {
+	v := bs[len(bs)-1]; bs = bs[:len(bs)-1]
+	fnc, ok := CharLoader[v]
+	if ok {
+		return fnc(bs), nil
 	}
-
-	proficiencies := make([]int8, 17)
-	for i := 0; i < len(proficiencies); i++ {
-		proficiencies[i] = int8(bytes[i+6])
-	}
-
-	char := &Character{Race: race, Class: class, Attributes: attrib, Proficiencies: proficiencies}
-
-	return char
+	return nil, fmt.Errorf(ERROR_WRONG_CHAR_VERSION, v)
 }

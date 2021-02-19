@@ -61,8 +61,8 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	e.ShowHealth(shows[0])
 	e.ShowStamina(shows[1])
 	e.ShowMana(shows[2])
-	e.char = LoadChar(data[48:48+CHARACTER_BYTES_LENGTH])
-	return e, nil
+	e.char,err = LoadChar(data[48:48+CHARACTER_BYTES_LENGTH])
+	return e, err
 }
 func (cf *EntityFactory) Print() (out string) {
 	out = fmt.Sprintf("Path: %v, crNames: %v, entities: %v, prepare: %v, frame: %v",
