@@ -2,13 +2,14 @@ package TNE
 
 import (
 	"fmt"
-	"github.com/mortim-portim/GraphEng/GE"
+
 	cmp "github.com/mortim-portim/GraphEng/Compression"
+	"github.com/mortim-portim/GraphEng/GE"
 )
 
 const INDEX_FILE_NAME = "#index.txt"
-const(
-	ERR_NO_FACTORY_FOR_ENTITY_BY_NAME = 	"No factory for Entity: %v, with fcID: %v and Name: %s"
+const (
+	ERR_NO_FACTORY_FOR_ENTITY_BY_NAME = "No factory for Entity: %v, with fcID: %v and Name: %s"
 )
 
 //returns a entity factory that loads all entities from a specific path, prepare specifies the number of entities to be prepared
@@ -39,10 +40,13 @@ type EntityFactory struct {
 	prepare      int
 	frameCounter *int
 }
+
 func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error) {
 	fcID := int(cmp.BytesToInt16(data[0:2]))
 	e, err := cf.Get(fcID)
-	if err != nil {return nil, err}
+	if err != nil {
+		return nil, err
+	}
 	e.PosFromBytes(data[2:8])
 	e.orientation.FromByte(data[8])
 	e.neworientation.FromByte(data[9])
@@ -61,7 +65,7 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	e.ShowHealth(shows[0])
 	e.ShowStamina(shows[1])
 	e.ShowMana(shows[2])
-	e.Char,err = LoadChar(data[48:48+CHARACTER_BYTES_LENGTH])
+	e.Char, err = LoadChar(data[48 : 48+CHARACTER_BYTES_LENGTH])
 	return e, err
 }
 func (cf *EntityFactory) Print() (out string) {
@@ -74,7 +78,7 @@ func (cf *EntityFactory) SetUpdateFunctionMap(fncs map[string]EntityUpdater) err
 	for name, fnc := range fncs {
 		if !cf.HasEntityName(name) {
 			err = fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY_BY_NAME, nil, -1, name)
-		}else{
+		} else {
 			idx, _ := cf.mapper[name]
 			cf.entities[idx].RegisterUpdateCallback(fnc)
 		}
@@ -87,7 +91,7 @@ func (cf *EntityFactory) SetUpdateFunctionList(fncs []EntityUpdater) error {
 		err = fmt.Errorf(ERR_NO_FACTORY_FOR_ENTITY, nil, len(cf.entities))
 		fncs = fncs[:len(cf.entities)]
 	}
-	
+
 	for i, fnc := range fncs {
 		cf.entities[i].RegisterUpdateCallback(fnc)
 	}
@@ -117,7 +121,7 @@ func (cf *EntityFactory) Prepare() {
 		if len(cf.prepared[i]) != cf.prepare {
 			cf.prepared[i] = make([]*Entity, cf.prepare)
 		}
-		for idx, _ := range cf.prepared[i] {
+		for idx := range cf.prepared[i] {
 			if cf.prepared[i][idx] == nil {
 				cf.prepared[i][idx] = cr.Copy()
 			}
@@ -126,10 +130,13 @@ func (cf *EntityFactory) Prepare() {
 }
 func (cf *EntityFactory) GetFromCharacter(char *Character) (*Entity, error) {
 	ent, err := cf.GetByName(char.Race.Name)
-	if err != nil {return ent, err}
+	if err != nil {
+		return ent, err
+	}
 	ent.Char = char
 	return ent, nil
 }
+
 //Slower than Get ~1000ns
 func (cf *EntityFactory) GetByName(name string) (*Entity, error) {
 	if !cf.HasEntityName(name) {
@@ -166,6 +173,7 @@ func (cf *EntityFactory) HasEntityName(name string) bool {
 	_, ok := cf.mapper[name]
 	return ok
 }
+
 //Returns a slice containing the names of all entities
 func (cf *EntityFactory) EntityNames() []string {
 	return cf.crNames

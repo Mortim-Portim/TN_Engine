@@ -61,7 +61,7 @@ func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
 		data := sp.Se.channel.Pipes[SYNCENT_CHAN_PLAYER_CREATION]
 		if data[0] == 0 {
 			sp.SetNilPlayer()
-		}else if data[0] == 1 {
+		} else if data[0] == 1 {
 			err := sp.CreatePlayerFromVars(data[1:])
 			if err != nil {
 				panic(err)
@@ -114,7 +114,7 @@ func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory) (sp *SyncPlayer) {
 		Se:        GetNewSyncEntity(ACIDStart, ef),
 	}
 	sp.ACIDs = make([]int, SYNCVARS_PER_PLAYER)
-	for i, _ := range sp.ACIDs {
+	for i := range sp.ACIDs {
 		sp.ACIDs[i] = ACIDStart + i
 	}
 	return

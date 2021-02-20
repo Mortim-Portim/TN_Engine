@@ -41,11 +41,14 @@ func (p *Player) Copy() (p2 *Player) {
 const INTERACTION_DISTANCE = 1
 
 func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) {
+	if p.ShowsDialogSymbol {
+		return
+	}
 	for _, syncEnt := range syncEnts {
 		if syncEnt.HasEntity() {
 			ent := syncEnt.Entity
 			dis := ent.Hitbox.GetMiddle().DistanceTo(p.Hitbox.GetMiddle())
-			if dis <= INTERACTION_DISTANCE && !p.ShowsDialogSymbol {
+			if dis <= INTERACTION_DISTANCE {
 				p.ShowsDialogSymbol = true
 				p.DialogEntity = ent
 				break

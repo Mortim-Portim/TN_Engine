@@ -1,11 +1,9 @@
 package TNE
 
-
 import (
 	"github.com/mortim-portim/GraphEng/GE"
 	//"github.com/hajimehoshi/ebiten"
 	"errors"
-
 	//cmp "github.com/mortim-portim/GraphEng/Compression"
 )
 
@@ -25,11 +23,12 @@ func GetChunk(x, y int) (c *Chunk) {
 }
 
 type Chunk struct {
-	pos, tileLT, tileRB            [2]int16
-	entities                       []*Entity
-	
+	pos, tileLT, tileRB [2]int16
+	entities            []*Entity
+
 	LastUpdateFrame int
 }
+
 func (c *Chunk) GetEntities() []*Entity {
 	return c.entities
 }
@@ -45,13 +44,15 @@ func (c *Chunk) Add(e *Entity) error {
 func (c *Chunk) RemoveEntity(e *Entity) {
 	idx := -1
 	for i, e2 := range c.entities {
-		if e2 == e {idx = i}
+		if e2 == e {
+			idx = i
+		}
 	}
 	if idx >= 0 {
 		c.RemoveEntityByIdx(idx)
 	}
 }
-func (c *Chunk) UpdateEntities(w *World, server bool, Collider func(x,y,w,h float64)bool) (removed []*Entity) {
+func (c *Chunk) UpdateEntities(w *World, server bool, Collider func(x, y, w, h float64) bool) (removed []*Entity) {
 	removed = make([]*Entity, 0)
 	for idx, entity := range c.entities {
 		if entity != nil {
@@ -68,10 +69,10 @@ func (c *Chunk) UpdateEntities(w *World, server bool, Collider func(x,y,w,h floa
 }
 func (c *Chunk) RemoveNilEntities() {
 	rems := 0
-	for idx, _ := range c.entities {
+	for idx := range c.entities {
 		if c.entities[idx-rems] == nil {
-			c.RemoveEntityByIdx(idx-rems)
-			rems ++
+			c.RemoveEntityByIdx(idx - rems)
+			rems++
 		}
 	}
 }
@@ -79,6 +80,7 @@ func (c *Chunk) RemoveEntityByIdx(i int) {
 	c.entities[i] = c.entities[len(c.entities)-1]
 	c.entities = c.entities[:len(c.entities)-1]
 }
+
 //Returns the relative position of a entity in a chunk
 func (c *Chunk) RelPosOfEntity(e *Entity) (byte, byte, error) {
 	eX, eY := e.IntPos()
@@ -88,6 +90,7 @@ func (c *Chunk) RelPosOfEntity(e *Entity) (byte, byte, error) {
 	}
 	return byte(relX), byte(relY), nil
 }
+
 //Adds all entities of the chunk to drawables
 func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 	for _, ent := range c.entities {
@@ -96,6 +99,7 @@ func (c *Chunk) AddToDrawables(dws *GE.Drawables) {
 		}
 	}
 }
+
 //converts 2d coords in a chunk to a index
 func ChunkCoord2DtoIdx(x, y int) byte {
 	if x >= CHUNK_SIZE || y >= CHUNK_SIZE {
@@ -103,6 +107,7 @@ func ChunkCoord2DtoIdx(x, y int) byte {
 	}
 	return byte(x + CHUNK_SIZE*y)
 }
+
 //converts a index in a chunk to 2d coords
 func IdxtoChunkCoord2D(idx byte) (x, y int) {
 	csm1 := byte(CHUNK_SIZE - 1)
@@ -110,7 +115,6 @@ func IdxtoChunkCoord2D(idx byte) (x, y int) {
 	y = int((idx - (idx % csm1)) / csm1)
 	return
 }
-
 
 /**
 //DEPRECATED
@@ -125,7 +129,7 @@ func (c *Chunk) GetDelta() (bs []byte) {
 		}
 	}
 	bs = append(bs, cmp.Merge(entChngs, c.createdEntities...)...)
-	
+
 	for _,crBs := range(c.createdEntities) {
 		c.AddEntityFromCreationData(crBs)
 	}
@@ -133,7 +137,7 @@ func (c *Chunk) GetDelta() (bs []byte) {
 		c.entities[int(entI)] = nil
 	}
 	c.RemoveNilLocal()
-	
+
 	c.changes = make([]int, 0)
 	c.createdEntities = make([][]byte, 0)
 	c.removedEntities = make([]byte, 0)
@@ -148,12 +152,12 @@ func (c *Chunk) SetDelta(bs []byte) {
 	createdAndChanges := cmp.Demerge(bs, lengths)
 	created := createdAndChanges[:createdL]
 	changes := createdAndChanges[createdL:]
-	
+
 	for _,chngs := range(changes) {
 		idx := int(chngs[0])
 		c.entities[idx].SetDelta(chngs[1:])
 	}
-	
+
 	for _,crBs := range(created) {
 		c.AddEntityFromCreationData(crBs)
 	}

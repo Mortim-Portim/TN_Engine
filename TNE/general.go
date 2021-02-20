@@ -1,9 +1,10 @@
 package TNE
 
 import (
-	"runtime"
-	"github.com/hajimehoshi/ebiten"
 	"fmt"
+	"runtime"
+
+	"github.com/hajimehoshi/ebiten"
 )
 
 func CPUs() int {
@@ -15,14 +16,14 @@ func PrintPerformance(frame, timeTaken int) (out string) {
 	runtime.ReadMemStats(&m)
 	out = fmt.Sprintf("frame %v, TPS: %0.3f, Updating took: %v, Alloc: %v, TotalAlloc: %v, Sys: %v, NumGC: %v",
 		frame, ebiten.CurrentTPS(), timeTaken, bToMb(m.Alloc), bToMb(m.TotalAlloc), bToMb(m.Sys), m.NumGC)
-	return 
+	return
 }
 func bToMb(b uint64) uint64 {
-    return b / 1024 / 1024
+	return b / 1024 / 1024
 }
 func GetSliceOfVal(length, val int) (is []int) {
 	is = make([]int, length)
-	for i,_ := range(is) {
+	for i := range is {
 		is[i] = val
 	}
 	return
