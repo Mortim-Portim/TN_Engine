@@ -195,10 +195,7 @@ func (sm *SmallWorld) GetSyncPlayersFromWorld(w *World) {
 func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {
 	if wS != nil {
 		sm.Struct = wS
-		bs,err := wS.ToBytes()
-		if err != nil {
-			return err
-		}
+		bs := wS.ToBytes()
 		sm.WorldChan.SetBs(bs)
 	}
 	return nil
@@ -276,7 +273,7 @@ func (sm *SmallWorld) RegisterOnEntityChangeListeners() {
 func (sm *SmallWorld) OnWorldChanChange(sv GC.SyncVar, id int) {
 	data := sm.WorldChan.GetBs()
 	if len(data) > 0 {
-		wS,err := GE.GetWorldStructureFromBytes(sm.X, sm.Y, sm.W, sm.H, data, sm.tile_path, sm.struct_path)
+		wS,err := GE.LoadWorldStructureFromBytes(sm.X, sm.Y, sm.W, sm.H, data, sm.tile_path, sm.struct_path)
 		if err != nil {
 			panic(err)
 		}
