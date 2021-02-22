@@ -21,25 +21,34 @@ type Player struct {
 	DialogSymbol      *GE.ImageObj
 }
 
-func (p *Player) Move() {
+//Move (tiles float64) - moves the player at his own speed
+func (p *Player) Move(tiles float64) {
 	if p.Entity.isMoving {
 		return
 	}
-	p.Entity.Move(0.1, 1)
+	p.Entity.Move(tiles)
 }
+
+//GetCreationData () (bs []byte) - returns the players creation data
 func (p *Player) GetCreationData() (bs []byte) {
 	return []byte{24, 46, 88, 24, 66}
 }
+
+//GetPlayerByCreationData (bs []byte) (*Player, error) - tries to create an player from the given data
 func GetPlayerByCreationData(bs []byte) (*Player, error) {
 	return &Player{Entity: &Entity{}}, nil
 }
+
+//Copy () (p2 *Player)
 func (p *Player) Copy() (p2 *Player) {
 	p2 = &Player{Entity: p.Entity.Copy()}
 	return
 }
 
+//INTERACTION_DISTANCE - maximum distance to interact with other entities
 const INTERACTION_DISTANCE = 1
 
+//CheckNearbyDialogs (syncEnts ...*SyncEntity)
 func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) {
 	min := float64(INTERACTION_DISTANCE)
 	for _, syncEnt := range syncEnts {
@@ -59,10 +68,12 @@ func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) {
 	}
 }
 
-//updates the player
+//Update (w *World, server bool, Collider func(x, y, w, h float64) updates the player
 func (p *Player) Update(w *World, server bool, Collider func(x, y, w, h float64) bool) {
 	p.UpdateAll(w, server, Collider)
 }
+
+//Draw (screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) - implements GE.Drawable
 func (p *Player) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
 	p.Entity.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
 	if p.ShowsDialogSymbol && p.DialogSymbol != nil {
@@ -73,7 +84,7 @@ func (p *Player) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 	}
 }
 
-//moves the world to the players position
+//MoveWorld (w *GE.WorldStructure) - moves the world to the players position
 func (p *Player) MoveWorld(w *GE.WorldStructure) {
 	xip, yip := p.IntPos()
 	xiw, yiw := w.Middle()

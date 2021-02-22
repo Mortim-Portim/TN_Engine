@@ -7,6 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten"
 )
 
+var FPS = 30.0
+
 func CPUs() int {
 	return runtime.NumCPU()
 }

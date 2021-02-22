@@ -216,7 +216,8 @@ func (sm *SmallWorld) UpdateVars() {
 	}
 	if sm.HasWorldStruct() {
 		sm.SyncFrame.SetInt(int64(*sm.FrameCounter))
-		sm.SyncLightLevel.SetInt(sm.Struct.GetLightLevel())
+		lv := sm.Struct.GetLightLevel()
+		sm.SyncLightLevel.SetInt(lv)
 	}
 }
 func (sm *SmallWorld) HasWorldStruct() bool {
