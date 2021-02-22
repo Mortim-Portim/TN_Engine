@@ -41,23 +41,21 @@ func (p *Player) Copy() (p2 *Player) {
 const INTERACTION_DISTANCE = 1
 
 func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) {
-	if p.ShowsDialogSymbol {
-		if p.DialogEntity.Hitbox.GetMiddle().DistanceTo(p.Hitbox.GetMiddle()) > INTERACTION_DISTANCE {
-			p.ShowsDialogSymbol = false
-		} else {
-			return
-		}
-	}
+	min := float64(INTERACTION_DISTANCE)
 	for _, syncEnt := range syncEnts {
 		if syncEnt.HasEntity() {
 			ent := syncEnt.Entity
 			dis := ent.Hitbox.GetMiddle().DistanceTo(p.Hitbox.GetMiddle())
-			if dis <= INTERACTION_DISTANCE {
+			if dis <= min {
+				min = dis
 				p.ShowsDialogSymbol = true
 				p.DialogEntity = ent
 				break
 			}
 		}
+	}
+	if min == float64(INTERACTION_DISTANCE) {
+		p.ShowsDialogSymbol = false
 	}
 }
 
@@ -68,9 +66,9 @@ func (p *Player) Update(w *World, server bool, Collider func(x, y, w, h float64)
 func (p *Player) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
 	p.Entity.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
 	if p.ShowsDialogSymbol && p.DialogSymbol != nil {
-		p.DialogSymbol.ScaleToX(p.Drawbox.Bounds().X * sqSize)
-		p.DialogSymbol.Y = (p.Drawbox.Min().Y-leftTopY)*sqSize - p.DialogSymbol.H + yStart
-		p.DialogSymbol.X = (p.Drawbox.Min().X-leftTopX)*sqSize + xStart
+		p.DialogSymbol.ScaleToX(p.DialogEntity.Drawbox.Bounds().X * sqSize)
+		p.DialogSymbol.Y = (p.DialogEntity.Drawbox.Min().Y-leftTopY)*sqSize - p.DialogSymbol.H + yStart
+		p.DialogSymbol.X = (p.DialogEntity.Drawbox.Min().X-leftTopX)*sqSize + xStart
 		p.DialogSymbol.Draw(screen)
 	}
 }
