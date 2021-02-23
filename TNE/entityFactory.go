@@ -3,8 +3,8 @@ package TNE
 import (
 	"fmt"
 
-	cmp "github.com/mortim-portim/GraphEng/Compression"
 	"github.com/mortim-portim/GraphEng/GE"
+	cmp "github.com/mortim-portim/GraphEng/compression"
 )
 
 const INDEX_FILE_NAME = "#index.txt"

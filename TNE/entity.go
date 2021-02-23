@@ -5,8 +5,8 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten"
-	cmp "github.com/mortim-portim/GraphEng/Compression"
 	"github.com/mortim-portim/GraphEng/GE"
+	cmp "github.com/mortim-portim/GraphEng/compression"
 )
 
 type EntityUpdater interface {

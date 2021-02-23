@@ -4,7 +4,7 @@ import (
 	"github.com/mortim-portim/GraphEng/GE"
 	//"github.com/hajimehoshi/ebiten"
 	"errors"
-	//cmp "github.com/mortim-portim/GraphEng/Compression"
+	//cmp "github.com/mortim-portim/GraphEng/compression"
 )
 
 const CHUNK_SIZE = 16
