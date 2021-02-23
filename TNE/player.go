@@ -16,7 +16,7 @@ func GetPlayer() *Player {
 type Player struct {
 	*Entity
 
-	DialogEntity      *Entity
+	DialogEntity      *SyncEntity
 	ShowsDialogSymbol bool
 	DialogSymbol      *GE.ImageObj
 }
@@ -49,22 +49,25 @@ func (p *Player) Copy() (p2 *Player) {
 const INTERACTION_DISTANCE = 1
 
 //CheckNearbyDialogs (syncEnts ...*SyncEntity)
-func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) {
+func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) bool {
+	oldE := p.DialogEntity
 	min := float64(INTERACTION_DISTANCE)
 	for _, syncEnt := range syncEnts {
 		if syncEnt.HasEntity() {
-			ent := syncEnt.Entity
-			dis := ent.Hitbox.GetMiddle().DistanceTo(p.Hitbox.GetMiddle())
+			dis := syncEnt.Entity.Hitbox.GetMiddle().DistanceTo(p.Hitbox.GetMiddle())
 			if dis <= min {
 				min = dis
 				p.ShowsDialogSymbol = true
-				p.DialogEntity = ent
+				p.DialogEntity = syncEnt
 			}
 		}
 	}
 	if min == float64(INTERACTION_DISTANCE) {
 		p.ShowsDialogSymbol = false
+	} else if oldE != p.DialogEntity {
+		return true
 	}
+	return false
 }
 
 //Update (w *World, server bool, Collider func(x, y, w, h float64) updates the player
@@ -76,9 +79,9 @@ func (p *Player) Update(w *World, server bool, Collider func(x, y, w, h float64)
 func (p *Player) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
 	p.Entity.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
 	if p.ShowsDialogSymbol && p.DialogSymbol != nil {
-		p.DialogSymbol.ScaleToX(p.DialogEntity.Drawbox.Bounds().X * sqSize)
-		p.DialogSymbol.Y = (p.DialogEntity.Drawbox.Min().Y-leftTopY)*sqSize - p.DialogSymbol.H + yStart
-		p.DialogSymbol.X = (p.DialogEntity.Drawbox.Min().X-leftTopX)*sqSize + xStart
+		p.DialogSymbol.ScaleToX(p.DialogEntity.Entity.Drawbox.Bounds().X * sqSize)
+		p.DialogSymbol.Y = (p.DialogEntity.Entity.Drawbox.Min().Y-leftTopY)*sqSize - p.DialogSymbol.H + yStart
+		p.DialogSymbol.X = (p.DialogEntity.Entity.Drawbox.Min().X-leftTopX)*sqSize + xStart
 		p.DialogSymbol.Draw(screen)
 	}
 }

@@ -65,7 +65,8 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	e.ShowHealth(shows[0])
 	e.ShowStamina(shows[1])
 	e.ShowMana(shows[2])
-	e.Char, err = LoadChar(data[48 : 48+CHARACTER_BYTES_LENGTH])
+	e.ID = cmp.BytesToInt16(data[48:50])
+	e.Char, err = LoadChar(data[50 : 50+CHARACTER_BYTES_LENGTH])
 	return e, err
 }
 func (cf *EntityFactory) Print() (out string) {

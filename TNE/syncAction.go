@@ -13,6 +13,7 @@ const (
 	SyncAction_KeepMoving
 	SyncAction_ManualAnimationChange
 	SyncAction_Position
+	SyncAction_Interaction
 )
 
 func NewActionStack(data ...byte) *ActionStack {
@@ -49,6 +50,9 @@ func (as *ActionStack) Print() (out string) {
 		case SyncAction_Position:
 			out += "|Position"
 			return 6
+		case SyncAction_Interaction:
+			out += "|Interaction"
+			return 3
 		}
 		return 0
 	})
@@ -63,7 +67,7 @@ func (as *ActionStack) Copy() (as2 *ActionStack) {
 func (as *ActionStack) Reset() {
 	as.data = []byte{}
 }
-func (as *ActionStack) ApplyOnEobj(e *Entity) {
+func (as *ActionStack) Apply(e *Entity, sm *SmallWorld) {
 	as.iterate(func(t byte, data []byte) int {
 		switch t {
 		case SyncAction_StartMove:
@@ -90,15 +94,23 @@ func (as *ActionStack) ApplyOnEobj(e *Entity) {
 		case SyncAction_Position:
 			e.PosFromBytes(data)
 			return 6
+		case SyncAction_Interaction:
+			e.frozen = cmp.ByteToBool(data[2])
+			eID := cmp.BytesToInt16(data[0:2])
+			e2 := sm.HasEntityWithID(eID)
+			if e2 != nil {
+				e2.Entity.frozen = e.frozen
+			}
+			return 3
 		}
 		return 0
 	})
 	//as.WaitForReset()
 }
-func (as *ActionStack) AppendAndApply(bs []byte, e *Entity) {
+func (as *ActionStack) AppendAndApply(bs []byte, e *Entity, sm *SmallWorld) {
 	old_data := as.data
 	as.SetAll(bs)
-	as.ApplyOnEobj(e)
+	as.Apply(e, sm)
 	as.SetAll(append(old_data, bs...))
 }
 func (as *ActionStack) SetAll(bs []byte) {
@@ -140,4 +152,7 @@ func (as *ActionStack) AddManualAnimationChange(idx uint8) {
 }
 func (as *ActionStack) AddPosition(bs []byte) {
 	as.Add(SyncAction_Position, bs...)
+}
+func (as *ActionStack) AddInteraction(freeze bool, id int16) {
+	as.Add(SyncAction_Interaction, append(cmp.Int16ToBytes(id), cmp.BoolToByte(freeze))...)
 }

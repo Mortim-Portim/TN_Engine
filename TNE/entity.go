@@ -17,6 +17,7 @@ type EntityUpdater interface {
 type Entity struct {
 	*Eobj
 
+	ID   int16
 	Char *Character
 
 	Speed                             float64
@@ -47,6 +48,7 @@ func (e *Entity) Copy() (e2 *Entity) {
 		showMana:       e.showMana,
 		Char:           e.Char.Copy(),
 		Speed:          e.Speed,
+		ID:             e.ID,
 	}
 	e2.Init()
 	return
@@ -91,14 +93,15 @@ func (e *Entity) drawBar(screen *ebiten.Image, idx int, col color.Color, leftTop
 	bar.Fill(screen, col)
 }
 
-const ENTITY_CREATION_DATA_LENGTH = 48 + CHARACTER_BYTES_LENGTH
+const ENTITY_CREATION_DATA_LENGTH = 50 + CHARACTER_BYTES_LENGTH
 
 func (e *Entity) GetCreationData() (bs []byte) {
 	bs = e.Eobj.GetCreationData()
 	copy(bs[23:47], cmp.Float32sToBytes(e.MaxHealth(), e.MaxStamina(), e.MaxMana(), e.Health(), e.Stamina(), e.Mana()))
 	bs[47] = cmp.BoolsToBytes(e.DoesShowHealth(), e.DoesShowStamina(), e.DoesShowMana())[0]
+	copy(bs[48:50], cmp.Int16ToBytes(e.ID))
 	if e.Char != nil {
-		copy(bs[48:48+CHARACTER_BYTES_LENGTH], e.Char.ToByte())
+		copy(bs[50:50+CHARACTER_BYTES_LENGTH], e.Char.ToByte())
 	}
 	return
 }

@@ -20,13 +20,13 @@ func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path strin
 		WorldChan:     GC.CreateSyncString(""),
 		Ef:            ef, X: X, Y: Y, W: W, H: H, tile_path: tile_path, struct_path: struct_path,
 		FrameCounter: &fc,
-		ActivePlayer: GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), ef),
+		ActivePlayer: GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), ef, sm),
 	}
 	for i := range sm.Ents {
-		sm.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), ef)
+		sm.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), ef, sm)
 	}
 	for i := range sm.Plys {
-		sm.Plys[i] = GetNewSyncPlayer(GetSVACID_Start_OtherPlayer(i), ef)
+		sm.Plys[i] = GetNewSyncPlayer(GetSVACID_Start_OtherPlayer(i), ef, sm)
 	}
 	return
 }
@@ -37,23 +37,24 @@ func (sm *SmallWorld) New() (sm2 *SmallWorld) {
 		WorldChan:     GC.CreateSyncString(""),
 		Ef:            sm.Ef, X: sm.X, Y: sm.Y, W: sm.W, H: sm.H, tile_path: sm.tile_path, struct_path: sm.struct_path,
 		FrameCounter:        sm.FrameCounter,
-		ActivePlayer:        GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef),
+		ActivePlayer:        GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef, sm2),
 		Struct:              sm.Struct,
 		FrameChanSendPeriod: sm.FrameChanSendPeriod,
 		TimePerFrame:        sm.TimePerFrame,
 	}
 	for i := range sm2.Ents {
-		sm2.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), sm.Ef)
+		sm2.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), sm.Ef, sm2)
 	}
 	for i := range sm2.Plys {
-		sm2.Plys[i] = GetNewSyncPlayer(GetSVACID_Start_OtherPlayer(i), sm.Ef)
+		sm2.Plys[i] = GetNewSyncPlayer(GetSVACID_Start_OtherPlayer(i), sm.Ef, sm2)
 	}
+	sm2.ActivePlayer.Se.sm = sm2
 	return
 }
 func (sm *SmallWorld) Clear() {
 	sm.Ents = make([]*SyncEntity, SYNCENTITIES_PREP)
 	sm.Plys = make([]*SyncPlayer, SYNCPLAYER_PREP)
-	sm.ActivePlayer = GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef)
+	sm.ActivePlayer = GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef, sm)
 }
 
 type SmallWorld struct {
@@ -102,6 +103,14 @@ func (sm *SmallWorld) GetIdxOfNilEnt() int {
 		}
 	}
 	return 0
+}
+func (sm *SmallWorld) HasEntityWithID(id int16) *SyncEntity {
+	for _, se := range sm.Ents {
+		if se.HasEntity() && se.Entity.ID == id {
+			return se
+		}
+	}
+	return nil
 }
 func (sm *SmallWorld) HasEntity(e *Entity) int {
 	for i, se := range sm.Ents {

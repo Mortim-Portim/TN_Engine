@@ -21,6 +21,8 @@ type SyncEntity struct {
 	Entity *Entity
 	ef     *EntityFactory
 
+	sm *SmallWorld
+
 	OnNewEntity func(se interface{}, oldE, newE GE.Drawable)
 }
 
@@ -99,17 +101,18 @@ func (se *SyncEntity) UpdateChanFromEnt() {
 func (se *SyncEntity) UpdateEntFromChan() {
 	if se.HasEntity() {
 		if se.channel.JustChanged(SYNCENT_CHAN_ACTIONS) {
-			se.Entity.Actions().AppendAndApply(se.channel.Pipes[SYNCENT_CHAN_ACTIONS], se.Entity)
+			se.Entity.Actions().AppendAndApply(se.channel.Pipes[SYNCENT_CHAN_ACTIONS], se.Entity, se.sm)
 		}
 	}
 }
 
 //Returns a new SyncEntity that will use ef as a creature factory
-func GetNewSyncEntity(ACIDStart int, ef *EntityFactory) (se *SyncEntity) {
+func GetNewSyncEntity(ACIDStart int, ef *EntityFactory, sm *SmallWorld) (se *SyncEntity) {
 	se = &SyncEntity{
 		ef:        ef,
 		ACIDStart: ACIDStart,
 		channel:   GC.GetNewChannel(SYNCENT_CHAN_NUM),
+		sm:        sm,
 	}
 	se.ACIDs = make([]int, SYNCVARS_PER_ENTITY)
 	for i := range se.ACIDs {

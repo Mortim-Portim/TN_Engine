@@ -108,10 +108,10 @@ func (sp *SyncPlayer) SendToChannel(idx int, msg []byte, force bool) bool {
 }
 
 //Returns an emtpy new SyncPlayer struct, that can build its own player the EntityFactory and Creation data
-func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory) (sp *SyncPlayer) {
+func GetNewSyncPlayer(ACIDStart int, ef *EntityFactory, sm *SmallWorld) (sp *SyncPlayer) {
 	sp = &SyncPlayer{
 		ACIDStart: ACIDStart,
-		Se:        GetNewSyncEntity(ACIDStart, ef),
+		Se:        GetNewSyncEntity(ACIDStart, ef, sm),
 	}
 	sp.ACIDs = make([]int, SYNCVARS_PER_PLAYER)
 	for i := range sp.ACIDs {

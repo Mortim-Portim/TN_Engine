@@ -30,9 +30,9 @@ type Eobj struct {
 	anims       []*GE.DayNightAnim
 	currentAnim uint8
 
-	xPos, yPos                  int64
-	orientation, neworientation *Direction
-	isMoving, keepMoving        bool
+	xPos, yPos                   int64
+	orientation, neworientation  *Direction
+	isMoving, keepMoving, frozen bool
 
 	movingFrames, movedFrames int
 	movingStepSize            float64
@@ -47,7 +47,7 @@ type Eobj struct {
 //Copys the Eobj
 func (e *Eobj) Copy() (e2 *Eobj) {
 	e2 = &Eobj{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation.Copy(), e.neworientation.Copy(), e.isMoving, e.keepMoving,
-		e.movingFrames, e.movedFrames, e.movingStepSize, e.actions.Copy(), e.factoryCreationId, e.frame, e.updateFunc}
+		e.frozen, e.movingFrames, e.movedFrames, e.movingStepSize, e.actions.Copy(), e.factoryCreationId, e.frame, e.updateFunc}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
 		if anim != nil {
@@ -59,6 +59,9 @@ func (e *Eobj) Copy() (e2 *Eobj) {
 
 //Updates the movement and calls the provided Update func afterwards
 func (e *Eobj) UpdateAll(w *World, server bool, Collider func(x, y, w, h float64) bool) {
+	if e.frozen {
+		return
+	}
 	if e.isMoving {
 		if e.movedFrames >= e.movingFrames {
 			e.isMoving = false
@@ -86,6 +89,9 @@ func (e *Eobj) UpdateAll(w *World, server bool, Collider func(x, y, w, h float64
 //Synced .................................................................................................................................................
 //Initiates a move action with a specific lenght an duration
 func (e *Eobj) MoveLengthAndFrame(length float64, frames int) {
+	if e.frozen {
+		return
+	}
 	e.actions.AddStartMove(length, frames)
 	e.isMoving = true
 	e.movingFrames = frames
@@ -96,6 +102,9 @@ func (e *Eobj) MoveLengthAndFrame(length float64, frames int) {
 
 //Changes the orientation
 func (e *Eobj) ChangeOrientation(dir *Direction) {
+	if e.frozen {
+		return
+	}
 	if dir.IsValid() {
 		if e.isMoving {
 			e.actions.AddOrientation(dir)
@@ -112,12 +121,18 @@ func (e *Eobj) ChangeOrientation(dir *Direction) {
 	}
 }
 func (e *Eobj) KeepMoving(mv bool) {
+	if e.frozen {
+		return
+	}
 	if mv != e.keepMoving {
 		e.actions.AddKeepMoving(mv)
 		e.keepMoving = mv
 	}
 }
 func (e *Eobj) SetAnim(idx uint8) {
+	if e.frozen {
+		return
+	}
 	e.actions.AddManualAnimationChange(idx)
 	e.setAnim(idx)
 }
@@ -128,6 +143,18 @@ func (e *Eobj) AddPos() {
 //Unsynced ...............................................................................................................................................
 func (e *Eobj) RegisterUpdateFunc(u func(eo *Eobj, world *World)) {
 	e.updateFunc = u
+}
+func (e *Eobj) StartInteraction(syncEntIDX int16) {
+	if !e.frozen {
+		e.frozen = true
+		e.actions.AddInteraction(true, syncEntIDX)
+	}
+}
+func (e *Eobj) StopInteraction(syncEntIDX int16) {
+	if e.frozen {
+		e.frozen = false
+		e.actions.AddInteraction(false, syncEntIDX)
+	}
 }
 
 //[6]byte
@@ -157,6 +184,9 @@ func (e *Eobj) SetBottomRightTo(x, y float64) {
 
 //Updates the Orientation animation, ONLY call this if really necassary
 func (e *Eobj) UpdateOrientationAnim() {
+	if e.frozen {
+		return
+	}
 	idx := e.orientation.ID
 	if idx == ENTITY_ORIENTATION_U || idx == ENTITY_ORIENTATION_D {
 		idx = int(e.currentAnim)
