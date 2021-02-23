@@ -26,9 +26,6 @@ type Entity struct {
 	UpdateCallBack                    EntityUpdater
 }
 
-func (e *Entity) LoadStatsFromChar(char *Character) {
-
-}
 func (e *Entity) MoveTiles(tiles float64) {
 	e.Eobj.MoveLengthAndFrame(tiles, int(math.Round((tiles/e.Speed)*float64(FPS))))
 }

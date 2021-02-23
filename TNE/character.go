@@ -2,6 +2,7 @@ package TNE
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -90,6 +91,54 @@ type Character struct {
 	Proficiencies []int8
 }
 
+func baseCompFunc(y float64, percents ...float64) func(vals ...float64) float64 {
+	return func(vals ...float64) (f float64) {
+		for i, val := range vals {
+			f += math.Pow(percents[i], val)
+		}
+		f *= y
+		return
+	}
+}
+
+const (
+	MODIFIER_SPEED_BASE = 5
+	MODIFIER_SPEED_STR  = 1.03
+	MODIFIER_SPEED_DEX  = 1.05
+
+	MODIFIER_HEALTH_BASE = 50
+	MODIFIER_HEALTH_STR  = 1.1
+	MODIFIER_HEALTH_DEX  = 1.05
+
+	MODIFIER_STAMINA_BASE = 50
+	MODIFIER_STAMINA_STR  = 1.05
+	MODIFIER_STAMINA_DEX  = 1.1
+
+	MODIFIER_MANA_BASE = 50
+	MODIFIER_MANA_INT  = 1.1
+	MODIFIER_MANA_CHA  = 1.05
+)
+
+func (char *Character) SetEntityValues(e *Entity) {
+	e.Speed = char.CompSpeed(MODIFIER_SPEED_BASE, MODIFIER_SPEED_STR, MODIFIER_SPEED_DEX)
+	e.SetMaxHealth(float32(char.CompHealth(MODIFIER_HEALTH_BASE, MODIFIER_HEALTH_STR, MODIFIER_HEALTH_DEX)))
+	e.SetMaxStamina(float32(char.CompStamina(MODIFIER_STAMINA_BASE, MODIFIER_STAMINA_STR, MODIFIER_STAMINA_DEX)))
+	e.SetMaxMana(float32(char.CompMana(MODIFIER_MANA_BASE, MODIFIER_MANA_INT, MODIFIER_MANA_CHA)))
+	e.ResetHSM()
+}
+
+func (char *Character) CompSpeed(base, strWeight, dexWeight float64) float64 {
+	return baseCompFunc(base, strWeight, dexWeight)(float64(char.Proficiencies[SCORE_STRENGTH]), float64(char.Proficiencies[SCORE_DEXTERITY]))
+}
+func (char *Character) CompHealth(base, strWeight, dexWeight float64) float64 {
+	return baseCompFunc(base, strWeight, dexWeight)(float64(char.Proficiencies[SCORE_STRENGTH]), float64(char.Proficiencies[SCORE_DEXTERITY]))
+}
+func (char *Character) CompStamina(base, strWeight, dexWeight float64) float64 {
+	return baseCompFunc(base, strWeight, dexWeight)(float64(char.Proficiencies[SCORE_STRENGTH]), float64(char.Proficiencies[SCORE_DEXTERITY]))
+}
+func (char *Character) CompMana(base, intWeight, chaWeight float64) float64 {
+	return baseCompFunc(base, intWeight, chaWeight)(float64(char.Proficiencies[SCORE_INTELLIGENCE]), float64(char.Proficiencies[SCORE_CHARISMA]))
+}
 func GetCharacter(name string, raceId, classId int) (char *Character) {
 	char = &Character{
 		Name:          name,
