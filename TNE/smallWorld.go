@@ -1,31 +1,24 @@
 package TNE
 
 import (
+	"fmt"
+	"time"
+
 	ws "github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/mortim-portim/GameConn/GC"
 	"github.com/mortim-portim/GraphEng/GE"
-
-	"fmt"
+	cmp "github.com/mortim-portim/GraphEng/compression"
 )
-
-/**
-Channel communication:
-(1)[mt]+(n)[msg]
-**/
-/**
-Dont forget do set FrameCounter on Server and assign WorldStructure
-**/
 
 func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path string) (sm *SmallWorld, err error) {
 	fc := 0
 	ef, err := GetEntityFactory(entity_path, &fc, 3)
 	sm = &SmallWorld{Ents: make([]*SyncEntity, SYNCENTITIES_PREP),
-		Plys:           make([]*SyncPlayer, SYNCPLAYER_PREP),
-		SyncFrame:      GC.CreateSyncInt64(0),
-		SyncLightLevel: GC.CreateSyncInt16(0),
-		WorldChan:      GC.CreateSyncString(""),
-		Ef:             ef, X: X, Y: Y, W: W, H: H, tile_path: tile_path, struct_path: struct_path,
+		Plys:          make([]*SyncPlayer, SYNCPLAYER_PREP),
+		SyncFrameChan: GC.CreateSyncString(""),
+		WorldChan:     GC.CreateSyncString(""),
+		Ef:            ef, X: X, Y: Y, W: W, H: H, tile_path: tile_path, struct_path: struct_path,
 		FrameCounter: &fc,
 		ActivePlayer: GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), ef),
 	}
@@ -39,14 +32,15 @@ func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path strin
 }
 func (sm *SmallWorld) New() (sm2 *SmallWorld) {
 	sm2 = &SmallWorld{Ents: make([]*SyncEntity, SYNCENTITIES_PREP),
-		Plys:           make([]*SyncPlayer, SYNCPLAYER_PREP),
-		SyncFrame:      GC.CreateSyncInt64(0),
-		SyncLightLevel: GC.CreateSyncInt16(0),
-		WorldChan:      GC.CreateSyncString(""),
-		Ef:             sm.Ef, X: sm.X, Y: sm.Y, W: sm.W, H: sm.H, tile_path: sm.tile_path, struct_path: sm.struct_path,
-		FrameCounter: sm.FrameCounter,
-		ActivePlayer: GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef),
-		Struct:       sm.Struct,
+		Plys:          make([]*SyncPlayer, SYNCPLAYER_PREP),
+		SyncFrameChan: GC.CreateSyncString(""),
+		WorldChan:     GC.CreateSyncString(""),
+		Ef:            sm.Ef, X: sm.X, Y: sm.Y, W: sm.W, H: sm.H, tile_path: sm.tile_path, struct_path: sm.struct_path,
+		FrameCounter:        sm.FrameCounter,
+		ActivePlayer:        GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef),
+		Struct:              sm.Struct,
+		FrameChanSendPeriod: sm.FrameChanSendPeriod,
+		TimePerFrame:        sm.TimePerFrame,
 	}
 	for i := range sm2.Ents {
 		sm2.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), sm.Ef)
@@ -74,11 +68,12 @@ type SmallWorld struct {
 
 	Struct *GE.WorldStructure
 
-	SyncFrame      *GC.SyncInt64
-	SyncLightLevel *GC.SyncInt16
-	WorldChan      *GC.SyncString
+	SyncFrameChan *GC.SyncString
+	WorldChan     *GC.SyncString
 
-	FrameCounter *int
+	TimePerFrame        int64
+	FrameChanSendPeriod int
+	FrameCounter        *int
 }
 
 func (sm *SmallWorld) SetEntitiesFromChunks(chL []*Chunk, idxs ...int) {
@@ -117,6 +112,10 @@ func (sm *SmallWorld) HasEntity(e *Entity) int {
 	return -1
 }
 func (sm *SmallWorld) UpdateAll(server bool) {
+	if !server {
+		*sm.FrameCounter++
+		sm.Struct.UpdateTime(time.Duration(sm.TimePerFrame))
+	}
 	if sm.ActivePlayer.HasPlayer() {
 		sm.ActivePlayer.UpdateAll(nil, server, sm.Struct.Collides)
 	}
@@ -214,10 +213,38 @@ func (sm *SmallWorld) UpdateVars() {
 	for _, p := range sm.Plys {
 		p.UpdateChanFromPlayer()
 	}
-	if sm.HasWorldStruct() {
-		sm.SyncFrame.SetInt(int64(*sm.FrameCounter))
-		lv := sm.Struct.GetLightLevel()
-		sm.SyncLightLevel.SetInt(lv)
+	if sm.HasWorldStruct() && *sm.FrameCounter%sm.FrameChanSendPeriod == 0 {
+		sm.SetFrameChangeVar()
+	}
+}
+func (sm *SmallWorld) SetTimePerFrame(tpf int64) {
+	sm.TimePerFrame = tpf
+	bs := make([]byte, 9)
+	bs[0] = 0
+	copy(bs[1:9], cmp.Int64ToBytes(sm.TimePerFrame))
+	sm.SyncFrameChan.SetBs(bs)
+}
+func (sm *SmallWorld) SetFrameChangeVar() {
+	bs := make([]byte, 24)
+	bs[0] = 1
+	copy(bs[1:9], cmp.Int64ToBytes(int64(*sm.FrameCounter)))
+	timBs, err := sm.Struct.CurrentTime.MarshalBinary()
+	GE.ShitImDying(err)
+	copy(bs[9:24], timBs)
+	sm.SyncFrameChan.SetBs(bs)
+}
+func (sm *SmallWorld) GetFrameChangeVar(bs []byte) {
+	if len(bs) < 9 {
+		return
+	}
+	idx := bs[0]
+	bs = bs[1:]
+	if idx == 0 {
+		sm.TimePerFrame = cmp.BytesToInt64(bs[0:8])
+	} else if idx == 1 {
+		*sm.FrameCounter = int(cmp.BytesToInt64(bs[0:8]))
+		GE.ShitImDying(sm.Struct.CurrentTime.UnmarshalBinary(bs[8:23]))
+		sm.Struct.UpdateTime(time.Duration(sm.TimePerFrame))
 	}
 }
 func (sm *SmallWorld) HasWorldStruct() bool {
@@ -283,15 +310,8 @@ func (sm *SmallWorld) OnWorldChanChange(sv GC.SyncVar, id int) {
 		sm.Struct = wS
 	}
 }
-func (sm *SmallWorld) OnFrameChange(sv GC.SyncVar, id int) {
-	*sm.FrameCounter = int(sm.SyncFrame.GetInt())
-	//fmt.Println("FrameCounter Change: ", *sm.FrameCounter)
-}
-func (sm *SmallWorld) OnLightLevelChange(sv GC.SyncVar, id int) {
-	if sm.HasWorldStruct() {
-		sm.Struct.SetLightLevel(sm.SyncLightLevel.GetInt())
-		//fmt.Println("LightLevel Change: ", sm.SyncLightLevel.GetInt())
-	}
+func (sm *SmallWorld) OnSyncFrameChanChange(sv GC.SyncVar, id int) {
+	sm.GetFrameChangeVar(sm.SyncFrameChan.GetBs())
 }
 func (sm *SmallWorld) Register(m *GC.ServerManager, client *ws.Conn) {
 	AllSVs := make(map[int]GC.SyncVar)
@@ -305,8 +325,7 @@ func (sm *SmallWorld) Register(m *GC.ServerManager, client *ws.Conn) {
 		p.GetSyncVars(AllSVs)
 		//p.RegisterOnChange(m)
 	}
-	AllSVs[WorldFrameChan_ACID] = sm.SyncFrame
-	AllSVs[WorldLightLevelChan_ACID] = sm.SyncLightLevel
+	AllSVs[WorldFrameChan_ACID] = sm.SyncFrameChan
 	AllSVs[WorldStructChan_ACID] = sm.WorldChan
 	//m.RegisterOnChangeFunc(WorldChannel_ACID, []func(GC.SyncVar, int){sm.OnChannelChange}, clients...)
 	m.RegisterSyncVars(true, AllSVs, client)
@@ -324,11 +343,8 @@ func (sm *SmallWorld) GetRegistered(m *GC.ClientManager) {
 		p.GetRegisterdSyncVars(m)
 		p.RegisterOnChange(m)
 	}
-	sm.SyncFrame = m.SyncvarsByACID[WorldFrameChan_ACID].(*GC.SyncInt64)
-	m.RegisterOnChangeFunc(WorldFrameChan_ACID, sm.OnFrameChange)
-
-	sm.SyncLightLevel = m.SyncvarsByACID[WorldLightLevelChan_ACID].(*GC.SyncInt16)
-	m.RegisterOnChangeFunc(WorldLightLevelChan_ACID, sm.OnLightLevelChange)
+	sm.SyncFrameChan = m.SyncvarsByACID[WorldFrameChan_ACID].(*GC.SyncString)
+	m.RegisterOnChangeFunc(WorldFrameChan_ACID, sm.OnSyncFrameChanChange)
 
 	sm.WorldChan = m.SyncvarsByACID[WorldStructChan_ACID].(*GC.SyncString)
 	m.RegisterOnChangeFunc(WorldStructChan_ACID, sm.OnWorldChanChange)

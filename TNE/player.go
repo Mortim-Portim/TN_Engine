@@ -26,7 +26,7 @@ func (p *Player) Move(tiles float64) {
 	if p.Entity.isMoving {
 		return
 	}
-	p.Entity.Move(tiles)
+	p.Entity.Move()
 }
 
 //GetCreationData () (bs []byte) - returns the players creation data
@@ -59,7 +59,6 @@ func (p *Player) CheckNearbyDialogs(syncEnts ...*SyncEntity) {
 				min = dis
 				p.ShowsDialogSymbol = true
 				p.DialogEntity = ent
-				break
 			}
 		}
 	}

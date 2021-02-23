@@ -26,8 +26,14 @@ type Entity struct {
 	UpdateCallBack                    EntityUpdater
 }
 
-func (e *Entity) Move(tiles float64) {
+func (e *Entity) LoadStatsFromChar(char *Character) {
+
+}
+func (e *Entity) MoveTiles(tiles float64) {
 	e.Eobj.MoveLengthAndFrame(tiles, int(math.Round((tiles/e.Speed)*float64(FPS))))
+}
+func (e *Entity) Move() {
+	e.Eobj.MoveLengthAndFrame(0.017*e.Speed, int(math.Round(0.017*float64(FPS))))
 }
 func (e *Entity) Copy() (e2 *Entity) {
 	e2 = &Entity{
@@ -59,7 +65,7 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	e.SetMaxStamina(100)
 	e.SetMaxMana(130)
 	e.ResetHSM()
-	e.Speed = 3
+	e.Speed = 6
 	return e, nil
 }
 
