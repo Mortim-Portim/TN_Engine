@@ -10,7 +10,7 @@ const (
 )
 
 type attackparams interface {
-	createattack(e *Entity, x, y float64) Attack
+	createattack(e *Entity, x, y float64, data interface{}) Attack
 }
 
 type projectileattparam struct {
@@ -19,14 +19,14 @@ type projectileattparam struct {
 	speed  float64
 }
 
-func (param projectileattparam) createattack(e *Entity, x, y float64) Attack {
+func (param projectileattparam) createattack(e *Entity, x, y float64, data interface{}) Attack {
 	return &ProjectileAttack{attackparams: param}
 }
 
 /**
 Add every Attack to this list according to its index
 **/
-var AttackGetter = []func(e *Entity, x, y float64) Attack{
+var AttackGetter = []func(e *Entity, x, y float64, data interface{}) Attack{
 	projectileattparam{"Fireball", 5, 5}.createattack,
 }
 
@@ -35,7 +35,7 @@ type Attack interface {
 
 	/**
 	-> Starts and initializes the attack
-	-> pl is the player who started the attack
+	-> e is the player who started the attack
 	-> w is the world, on the client w = nil
 	-> if w != nil the attack should modifiy other entities (health) that it hits
 	-> if w == nil the attack should just be displayed on the client
@@ -44,6 +44,7 @@ type Attack interface {
 	/**
 	-> updates the attack
 	-> is called every frame
+	-> e is the player who started the attack
 	-> if w != nil the attack should modifiy other entities (health) that it hits
 	-> if w == nil the attack should just be displayed on the client
 	**/
