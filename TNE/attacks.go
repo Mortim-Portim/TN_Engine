@@ -51,3 +51,38 @@ func GetAttackFromBytes(bs []byte) (a Attack, err error) {
 
 	return
 }
+
+type ProjectileAttack struct {
+	*GE.WObj
+	rotation, speed float64
+}
+
+func (attack *ProjectileAttack) Start(pl *Player, w *World, x, y float64) {
+
+}
+
+func (attack *ProjectileAttack) Update(pl *Player, w *World) {
+
+}
+
+func (attack *ProjectileAttack) IsFinished() bool {
+
+}
+
+func (attack *ProjectileAttack) ToBytes() []byte {
+
+}
+
+type attackparams interface {
+	createattack() Attack
+}
+
+type projectileattackparams struct {
+	name   string
+	damage int
+	speed  float64
+}
+
+func (param projectileattackparams) createattack() Attack {
+	return ProjectileAttack{}
+}
