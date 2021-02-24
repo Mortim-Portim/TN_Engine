@@ -1,6 +1,9 @@
 package TNE
 
-import "github.com/mortim-portim/GraphEng/GE"
+import (
+	"github.com/hajimehoshi/ebiten"
+	"github.com/mortim-portim/GraphEng/GE"
+)
 
 /**
 Add the index of every Attack as a constant
@@ -9,25 +12,41 @@ const (
 	ATTACK_FIREBALL = iota
 )
 
-type attackparams interface {
-	createattack(e *Entity, x, y float64, data interface{}) Attack
+type Attackparams interface {
+	Init(img *ebiten.Image)
+	Createattack(e *Entity, x, y float64, data interface{}) Attack
+	FromBytes(bs []byte) Attack
 }
 
-type projectileattparam struct {
-	name   string
-	damage int
-	speed  float64
+type Projectileattparam struct {
+	Name   string
+	Id     int
+	Damage int
+	Speed  float64
+	obj    *GE.WObj
 }
 
-func (param projectileattparam) createattack(e *Entity, x, y float64, data interface{}) Attack {
-	return &ProjectileAttack{attackparams: param}
+func (param Projectileattparam) Init(img *ebiten.Image) {
+	daynight := GE.GetDayNightAnim(0, 0, 10, 10, 1, 1, img)
+	param.obj = GE.GetWObj(daynight, 5, 5, 0, 0, 16, 0, param.Name)
+}
+
+func (param Projectileattparam) Createattack(e *Entity, x, y float64, data interface{}) Attack {
+	px, py, _ := e.GetMiddle()
+	vector := (&GE.Vector{x - px, y - py, 0}).Normalize().Mul(param.Speed)
+	return &ProjectileAttack{WObj: param.obj.Copy(), Projectileattparam: param, direction: vector, finished: false}
+}
+
+func (param Projectileattparam) FromBytes(bs []byte) Attack {
+	vector := GE.VectorFromBytes(bs[:24])
+	return &ProjectileAttack{WObj: param.obj.Copy(), Projectileattparam: param, direction: vector, finished: false}
 }
 
 /**
 Add every Attack to this list according to its index
 **/
-var AttackGetter = []func(e *Entity, x, y float64, data interface{}) Attack{
-	projectileattparam{"Fireball", 5, 5}.createattack,
+var Attacks = []Attackparams{
+	Projectileattparam{"Fireball", ATTACK_FIREBALL, 5, 5, nil},
 }
 
 type Attack interface {
@@ -65,14 +84,15 @@ type Attack interface {
 -> will be followed by a call to Start(pl *Player, w *World, x, y float64)
 **/
 func GetAttackFromBytes(bs []byte) (a Attack, err error) {
-
-	return
+	id := int(bs[0])
+	return Attacks[id].FromBytes(bs[1:]), nil
 }
 
 type ProjectileAttack struct {
 	*GE.WObj
-	attackparams
-	rotation float64
+	Projectileattparam
+	direction *GE.Vector
+	finished  bool
 }
 
 func (attack *ProjectileAttack) Start(e *Entity, w *World) {
@@ -80,13 +100,16 @@ func (attack *ProjectileAttack) Start(e *Entity, w *World) {
 }
 
 func (attack *ProjectileAttack) Update(e *Entity, w *World) {
-
+	attack.WObj.MoveBy(attack.direction.X, attack.direction.Y)
 }
 
 func (attack *ProjectileAttack) IsFinished() bool {
-
+	return false
 }
 
 func (attack *ProjectileAttack) ToBytes() []byte {
-
+	bytarray := make([]byte, 0)
+	bytarray = append(bytarray, byte(attack.Id))
+	bytarray = append(bytarray, attack.direction.ToBytes()...)
+	return bytarray
 }

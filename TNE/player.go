@@ -29,7 +29,7 @@ func (p *Player) ChangeToAttack(idx int) {
 	}
 }
 func (p *Player) StartAttack(x, y float64) {
-	a := AttackGetter[p.CurrentAttack](p.Entity, x, y, nil)
+	a := Attacks[p.CurrentAttack].Createattack(p.Entity, x, y, nil)
 	p.MakeAttackSynced(a, nil)
 }
 
