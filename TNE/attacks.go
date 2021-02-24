@@ -10,23 +10,25 @@ const (
 )
 
 type attackparams interface {
-	createattack() Attack
+	createattack(e *Entity, x, y float64) Attack
 }
 
-type projectileattackparams struct {
+type projectileattparam struct {
 	name   string
 	damage int
 	speed  float64
 }
 
-func (param projectileattackparams) createattack() Attack {
-	return &ProjectileAttack{}
+func (param projectileattparam) createattack(e *Entity, x, y float64) Attack {
+	return &ProjectileAttack{attackparams: param}
 }
 
 /**
 Add every Attack to this list according to its index
 **/
-var AttackGetter = []func(e *Entity, x, y float64) Attack{}
+var AttackGetter = []func(e *Entity, x, y float64) Attack{
+	projectileattparam{"Fireball", 5, 5}.createattack,
+}
 
 type Attack interface {
 	GE.Drawable
@@ -68,14 +70,15 @@ func GetAttackFromBytes(bs []byte) (a Attack, err error) {
 
 type ProjectileAttack struct {
 	*GE.WObj
-	rotation, speed float64
+	attackparams
+	rotation float64
 }
 
-func (attack *ProjectileAttack) Start(pl *Player, w *World, x, y float64) {
+func (attack *ProjectileAttack) Start(e *Entity, w *World) {
 
 }
 
-func (attack *ProjectileAttack) Update(pl *Player, w *World) {
+func (attack *ProjectileAttack) Update(e *Entity, w *World) {
 
 }
 
