@@ -12,14 +12,14 @@ const (
 /**
 Add every Attack to this list according to its index
 **/
-var AttackGetter = []func(e *Entity, x, y float64) Attack{}
+var AttackGetter = []func(e *Entity, x, y float64, data interface{}) Attack{}
 
 type Attack interface {
 	GE.Drawable
 
 	/**
 	-> Starts and initializes the attack
-	-> pl is the player who started the attack
+	-> e is the player who started the attack
 	-> w is the world, on the client w = nil
 	-> if w != nil the attack should modifiy other entities (health) that it hits
 	-> if w == nil the attack should just be displayed on the client
@@ -28,6 +28,7 @@ type Attack interface {
 	/**
 	-> updates the attack
 	-> is called every frame
+	-> e is the player who started the attack
 	-> if w != nil the attack should modifiy other entities (health) that it hits
 	-> if w == nil the attack should just be displayed on the client
 	**/
