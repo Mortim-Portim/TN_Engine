@@ -17,8 +17,9 @@ type EntityUpdater interface {
 type Entity struct {
 	*Eobj
 
-	ID   int16
-	Char *Character
+	ID            int16
+	Char          *Character
+	ActiveAttacks []Attack
 
 	Speed                                         float64
 	onHealthChange, onStaminaChange, onManaChange func(old, new float32)
@@ -28,6 +29,13 @@ type Entity struct {
 	UpdateCallBack                                EntityUpdater
 }
 
+func (e *Entity) MakeAttackSynced(a Attack) {
+	e.MakeAttackUnSynced(a)
+	e.Actions().AddAttack(a)
+}
+func (e *Entity) MakeAttackUnSynced(a Attack) {
+	e.ActiveAttacks = append(e.ActiveAttacks, a)
+}
 func (e *Entity) MoveTiles(tiles float64) {
 	e.Eobj.MoveLengthAndFrame(tiles, int(math.Round((tiles/e.Speed)*float64(FPS))))
 }
@@ -94,15 +102,14 @@ func (e *Entity) drawBar(screen *ebiten.Image, idx int, col color.Color, leftTop
 	bar.Fill(screen, col)
 }
 
-const ENTITY_CREATION_DATA_LENGTH = 50 + CHARACTER_BYTES_LENGTH
-
 func (e *Entity) GetCreationData() (bs []byte) {
 	bs = e.Eobj.GetCreationData()
-	copy(bs[23:47], cmp.Float32sToBytes(e.MaxHealth(), e.MaxStamina(), e.MaxMana(), e.Health(), e.Stamina(), e.Mana()))
-	bs[47] = cmp.BoolsToBytes(e.DoesShowHealth(), e.DoesShowStamina(), e.DoesShowMana())[0]
-	copy(bs[48:50], cmp.Int16ToBytes(e.ID))
+	bs = append(bs, cmp.Float32sToBytes(e.MaxHealth(), e.MaxStamina(), e.MaxMana(), e.Health(), e.Stamina(), e.Mana())...)
+	bs = append(bs, cmp.BoolsToBytes(e.DoesShowHealth(), e.DoesShowStamina(), e.DoesShowMana())[0])
+	bs = append(bs, cmp.Int16ToBytes(e.ID)...)
 	if e.Char != nil {
-		copy(bs[50:50+CHARACTER_BYTES_LENGTH], e.Char.ToByte())
+		charData := e.Char.ToByte()
+		copy(bs[50:50+len(charData)], charData)
 	}
 	return
 }

@@ -262,8 +262,11 @@ func (e *Eobj) PosToBytes() []byte {
 	x, y, dx, dy := e.getPosIntPBytes()
 	return append(append(cmp.Int16ToBytes(int16(x)), cmp.Int16ToBytes(int16(y))...), byte(dx), byte(dy))
 }
+
+const EOBJ_CREATION_DATA_LENGTH = 23
+
 func (e *Eobj) GetCreationData() (bs []byte) {
-	bs = make([]byte, ENTITY_CREATION_DATA_LENGTH)
+	bs = make([]byte, EOBJ_CREATION_DATA_LENGTH)
 	copy(bs[0:2], cmp.Int16ToBytes(e.factoryCreationId))
 	copy(bs[2:8], e.PosToBytes())
 	bs[8] = e.orientation.ToByte()

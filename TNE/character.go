@@ -3,7 +3,8 @@ package TNE
 import (
 	"fmt"
 	"math"
-	"strings"
+
+	cmp "github.com/mortim-portim/GraphEng/compression"
 )
 
 /**
@@ -89,6 +90,7 @@ type Character struct {
 	Race          *Race
 	Attributes    []int8
 	Proficiencies []int8
+	Attacks       []byte
 }
 
 func baseCompFunc(y float64, percents ...float64) func(vals ...float64) float64 {
@@ -159,53 +161,37 @@ func (char *Character) Copy() *Character {
 	return c
 }
 
-const CHARACTER_BYTES_LENGTH = ABIL_COUNT + SCORE_COUNT + MAX_CHARACTER_NAME_LENGTH + 2 + 1
-
 func (char *Character) ToByte() (bs []byte) {
-	bs = make([]byte, CHARACTER_BYTES_LENGTH)
+	attrBs := make([]byte, len(char.Attributes))
 	for i, attrib := range char.Attributes {
-		bs[i] = byte(attrib + 1)
+		attrBs[i] = byte(attrib + 1)
 	}
+	profBs := make([]byte, len(char.Proficiencies))
 	for i, prof := range char.Proficiencies {
-		bs[i+ABIL_COUNT] = byte(prof + 1)
+		profBs[i] = byte(prof + 1)
 	}
-	idx := ABIL_COUNT + SCORE_COUNT
-	name := char.Name
-	for len(name) < MAX_CHARACTER_NAME_LENGTH {
-		name += " "
-	}
-	copy(bs[idx:idx+MAX_CHARACTER_NAME_LENGTH], []byte(name))
-	idx += MAX_CHARACTER_NAME_LENGTH
-	bs[idx] = byte(char.Race.id)
-	bs[idx+1] = byte(char.Class.id)
-	bs[idx+2] = 0
+	bs = cmp.Merge([][]byte{[]byte(char.Name), char.Attacks}, attrBs, profBs, []byte{byte(char.Race.id), byte(char.Class.id)})
+	bs = append(bs, byte(0))
 	return
 }
 
 var CharLoader = map[byte]func([]byte) *Character{
 	0: func(bs []byte) (char *Character) {
+		data := cmp.Demerge(bs, []int{ABIL_COUNT, SCORE_COUNT, 2})
 		char = &Character{
-			Race:          Races[int(bs[len(bs)-2])],
-			Class:         Classes[int(bs[len(bs)-1])],
+			Race:          Races[int(data[2][0])],
+			Class:         Classes[int(data[2][1])],
 			Attributes:    make([]int8, 0),
 			Proficiencies: make([]int8, 0),
 		}
-		idx := 0
-		for idx < ABIL_COUNT {
-			v := int8(bs[idx]) - 1
-			if v >= 0 {
-				char.Attributes = append(char.Attributes, v)
-			}
-			idx++
+		for _, attrB := range data[0] {
+			char.Attributes = append(char.Attributes, int8(attrB)-1)
 		}
-		for idx < ABIL_COUNT+SCORE_COUNT {
-			v := int8(bs[idx]) - 1
-			if v >= 0 {
-				char.Proficiencies = append(char.Proficiencies, v)
-			}
-			idx++
+		for _, profB := range data[1] {
+			char.Proficiencies = append(char.Proficiencies, int8(profB)-1)
 		}
-		char.Name = strings.ReplaceAll(string(bs[idx:idx+MAX_CHARACTER_NAME_LENGTH]), " ", "")
+		char.Name = string(data[3])
+		char.Attacks = data[4]
 		return
 	},
 }
