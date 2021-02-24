@@ -50,7 +50,7 @@ type Attack interface {
 -> should load the attack from bytes
 -> will be followed by a call to Start(pl *Player, w *World, x, y float64)
 **/
-func GetAttackFromBytes(bs []byte) (a Attack) {
+func GetAttackFromBytes(bs []byte) (a Attack, err error) {
 
 	return
 }
