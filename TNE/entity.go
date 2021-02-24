@@ -29,12 +29,13 @@ type Entity struct {
 	UpdateCallBack                                EntityUpdater
 }
 
-func (e *Entity) MakeAttackSynced(a Attack) {
-	e.MakeAttackUnSynced(a)
+func (e *Entity) MakeAttackSynced(a Attack, w *World) {
 	e.Actions().AddAttack(a)
+	e.MakeAttackUnSynced(a, w)
 }
-func (e *Entity) MakeAttackUnSynced(a Attack) {
+func (e *Entity) MakeAttackUnSynced(a Attack, w *World) {
 	e.ActiveAttacks = append(e.ActiveAttacks, a)
+	a.Start(e, w)
 }
 func (e *Entity) MoveTiles(tiles float64) {
 	e.Eobj.MoveLengthAndFrame(tiles, int(math.Round((tiles/e.Speed)*float64(FPS))))
@@ -88,6 +89,9 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 	if e.showMana {
 		e.drawBar(screen, 2, color.RGBA{0, 0, 255, 255}, leftTopX, leftTopY, xStart, yStart, sqSize, e.ManaPercent())
 	}
+	for _, attack := range e.ActiveAttacks {
+		attack.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
+	}
 }
 
 const Health_Stamina_Mana_Bar_Rel = 0.05
@@ -117,6 +121,26 @@ func (e *Entity) OnEobjUpdate(eo *Eobj, w *World) {
 	if e.UpdateCallBack != nil {
 		e.UpdateCallBack.Update(e, w)
 	}
+	for i, attack := range e.ActiveAttacks {
+		attack.Update(e, w)
+		if attack.IsFinished() {
+			e.ActiveAttacks[i] = nil
+		}
+	}
+	e.RemoveNilAttacks()
+}
+func (e *Entity) RemoveNilAttacks() {
+	rems := 0
+	for idx := range e.ActiveAttacks {
+		if e.ActiveAttacks[idx-rems] == nil {
+			e.RemoveAttackByIdx(idx - rems)
+			rems++
+		}
+	}
+}
+func (e *Entity) RemoveAttackByIdx(i int) {
+	e.ActiveAttacks[i] = e.ActiveAttacks[len(e.ActiveAttacks)-1]
+	e.ActiveAttacks = e.ActiveAttacks[:len(e.ActiveAttacks)-1]
 }
 func (e *Entity) RegisterUpdateCallback(u EntityUpdater) {
 	e.UpdateCallBack = u

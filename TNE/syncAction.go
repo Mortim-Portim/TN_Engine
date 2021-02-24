@@ -110,7 +110,7 @@ func (as *ActionStack) Apply(e *Entity, sm *SmallWorld) {
 			l := int(cmp.BytesToInt16(data[0:2]))
 			a, err := GetAttackFromBytes(data[2 : 2+l])
 			if err == nil {
-				e.MakeAttackUnSynced(a)
+				e.MakeAttackUnSynced(a, sm.World)
 			} else {
 				panic(fmt.Sprintf("Error reconstructing Attack: %v", err))
 			}

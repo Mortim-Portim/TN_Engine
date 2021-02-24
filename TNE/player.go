@@ -16,9 +16,21 @@ func GetPlayer() *Player {
 type Player struct {
 	*Entity
 
+	CurrentAttack     int
 	DialogEntity      *SyncEntity
 	ShowsDialogSymbol bool
 	DialogSymbol      *GE.ImageObj
+}
+
+func (p *Player) ChangeToAttack(idx int) {
+	i := p.Char.GetAttack(idx)
+	if i >= 0 {
+		p.CurrentAttack = i
+	}
+}
+func (p *Player) StartAttack(x, y float64) {
+	a := AttackGetter[p.CurrentAttack](p.Entity, x, y)
+	p.MakeAttackSynced(a, nil)
 }
 
 //Move (tiles float64) - moves the player at his own speed
