@@ -44,7 +44,7 @@ func (uf *UniqueIDFactory) GetID(min, max int) int {
 func (uf *UniqueIDFactory) AddID(id int) {
 	if idx := containsI(*uf, id); idx >= 0 {
 		(*uf)[idx] = (*uf)[len(*uf)-1]
-		*uf = (*uf)[:len(*uf)-2]
+		*uf = (*uf)[:len(*uf)-1]
 	}
 }
 

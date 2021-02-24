@@ -20,11 +20,12 @@ type Entity struct {
 	ID   int16
 	Char *Character
 
-	Speed                             float64
-	maxHealth, maxStamina, maxMana    float32
-	health, stamina, mana             float32
-	showHealth, showStamina, showMana bool
-	UpdateCallBack                    EntityUpdater
+	Speed                                         float64
+	onHealthChange, onStaminaChange, onManaChange func(old, new float32)
+	maxHealth, maxStamina, maxMana                float32
+	health, stamina, mana                         float32
+	showHealth, showStamina, showMana             bool
+	UpdateCallBack                                EntityUpdater
 }
 
 func (e *Entity) MoveTiles(tiles float64) {
@@ -121,12 +122,27 @@ func (e *Entity) Init() {
 func (e *Entity) SetMaxHealth(v float32)  { e.maxHealth = v }
 func (e *Entity) SetMaxStamina(v float32) { e.maxStamina = v }
 func (e *Entity) SetMaxMana(v float32)    { e.maxMana = v }
-func (e *Entity) SetHealth(v float32)     { e.health = v }
-func (e *Entity) SetStamina(v float32)    { e.stamina = v }
-func (e *Entity) SetMana(v float32)       { e.mana = v }
-func (e *Entity) ResetHealth()            { e.health = e.maxHealth }
-func (e *Entity) ResetStamina()           { e.stamina = e.maxStamina }
-func (e *Entity) ResetMana()              { e.mana = e.maxMana }
+func (e *Entity) SetHealth(v float32) {
+	if e.onHealthChange != nil {
+		e.onHealthChange(e.health, v)
+	}
+	e.health = v
+}
+func (e *Entity) SetStamina(v float32) {
+	if e.onStaminaChange != nil {
+		e.onStaminaChange(e.stamina, v)
+	}
+	e.stamina = v
+}
+func (e *Entity) SetMana(v float32) {
+	if e.onManaChange != nil {
+		e.onManaChange(e.mana, v)
+	}
+	e.mana = v
+}
+func (e *Entity) ResetHealth()            { e.SetHealth(e.maxHealth) }
+func (e *Entity) ResetStamina()           { e.SetStamina(e.maxStamina) }
+func (e *Entity) ResetMana()              { e.SetMana(e.maxMana) }
 func (e *Entity) ResetHSM()               { e.ResetHealth(); e.ResetStamina(); e.ResetMana() }
 func (e *Entity) MaxHealth() float32      { return e.maxHealth }
 func (e *Entity) MaxStamina() float32     { return e.maxStamina }
@@ -143,3 +159,7 @@ func (e *Entity) ShowMana(v bool)         { e.showMana = v }
 func (e *Entity) DoesShowHealth() bool    { return e.showHealth }
 func (e *Entity) DoesShowStamina() bool   { return e.showStamina }
 func (e *Entity) DoesShowMana() bool      { return e.showMana }
+
+func (e *Entity) SetOnHealthChange(fnc func(old, new float32))  { e.onHealthChange = fnc }
+func (e *Entity) SetOnStaminaChange(fnc func(old, new float32)) { e.onStaminaChange = fnc }
+func (e *Entity) SetOnManaChange(fnc func(old, new float32))    { e.onManaChange = fnc }
