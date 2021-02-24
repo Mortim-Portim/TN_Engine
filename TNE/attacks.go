@@ -6,6 +6,20 @@ const (
 	ATTACK_FIREBALL = iota
 )
 
+type attackparams interface {
+	createattack() Attack
+}
+
+type projectileattackparams struct {
+	name   string
+	damage int
+	speed  float64
+}
+
+func (param projectileattackparams) createattack() Attack {
+	return ProjectileAttack{}
+}
+
 type Attack interface {
 	GE.Drawable
 
@@ -39,4 +53,25 @@ type Attack interface {
 func GetAttackFromBytes(bs []byte) (a Attack) {
 
 	return
+}
+
+type ProjectileAttack struct {
+	*GE.WObj
+	rotation, speed float64
+}
+
+func (attack *ProjectileAttack) Start(pl *Player, w *World, x, y float64) {
+
+}
+
+func (attack *ProjectileAttack) Update(pl *Player, w *World) {
+
+}
+
+func (attack *ProjectileAttack) IsFinished() bool {
+
+}
+
+func (attack *ProjectileAttack) ToBytes() []byte {
+
 }
