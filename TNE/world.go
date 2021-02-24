@@ -92,13 +92,13 @@ func (w *World) Print(ents bool) (out string, c int) {
 	out = fmt.Sprintf("%v: ", *w.FrameCounter)
 	for _, pl := range w.Players {
 		x, y, _ := pl.GetPos()
-		out += fmt.Sprintf("(P)(%p)|%0.2f, %0.2f, %s|", pl, x, y, pl.Entity.Actions().Print())
+		out += fmt.Sprintf("(P)(%p)(%v)|%0.2f, %0.2f, %s|", pl, pl.ID, x, y, pl.Entity.Actions().Print())
 		c++
 	}
 	if ents {
 		for _, ent := range w.Entities {
 			x, y, _ := ent.GetPos()
-			out += fmt.Sprintf("(E)(%p)|%0.2f, %0.2f, %s|", ent, x, y, ent.Actions().Print())
+			out += fmt.Sprintf("(E)(%p)(%v)|%0.2f, %0.2f, %s|", ent, ent.ID, x, y, ent.Actions().Print())
 			c++
 		}
 	}
@@ -147,7 +147,7 @@ func (w *World) GetPlayerChunks(Players ...*Player) (idxs []int) {
 		cx, cy := GetChunkOfEntity(player.Entity)
 		for _, delta := range CHUNK_DELTAS[w.ChunkRange] {
 			idx, err := w.ChunkMat.Get(cx+delta[0], cy+delta[1])
-			if err == nil && !containsI(idxs, int(idx)) {
+			if err == nil && containsI(idxs, int(idx)) == -1 {
 				idxs = append(idxs, int(idx))
 			}
 		}
@@ -250,16 +250,6 @@ func (w *World) indexOfPlayer(p *Player) int {
 		}
 	}
 	return idx
-}
-
-//Returns true if e is in s
-func containsI(s []int, e int) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }
 
 //DEPRECATED

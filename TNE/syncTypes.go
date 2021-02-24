@@ -27,8 +27,8 @@ const (
 )
 const (
 	//SyncVars that are registered by the world
-	WorldStructChan_ACID = iota
-	WorldFrameChan_ACID
+	SM_TO_CLIENT = iota
+	SM_TO_SERVER
 	WORLD_SYNCVARS
 )
 

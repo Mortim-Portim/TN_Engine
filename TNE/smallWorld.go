@@ -11,14 +11,29 @@ import (
 	cmp "github.com/mortim-portim/GraphEng/compression"
 )
 
+const (
+	SMALLWORLD_WORLDSTRUCTURE_MSG = iota
+	SMALLWORLD_TIMEPERFRAME_MSG
+	SMALLWORLD_FRAMEANDTIME_MSG
+	SMALLWORLD_SET_ACTIVEPLAYER_ID
+
+	SMALLWORLD_CHAN_TO_CLIENT_PIPES
+)
+
+const (
+	SMALLWORLD_PLACEHOLDER_TOSERV = iota
+
+	SMALLWORLD_CHAN_TO_SERVER_PIPES
+)
+
 func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path string) (sm *SmallWorld, err error) {
 	fc := 0
 	ef, err := GetEntityFactory(entity_path, &fc, 3)
 	sm = &SmallWorld{Ents: make([]*SyncEntity, SYNCENTITIES_PREP),
-		Plys:          make([]*SyncPlayer, SYNCPLAYER_PREP),
-		SyncFrameChan: GC.CreateSyncString(""),
-		WorldChan:     GC.CreateSyncString(""),
-		Ef:            ef, X: X, Y: Y, W: W, H: H, tile_path: tile_path, struct_path: struct_path,
+		Plys:         make([]*SyncPlayer, SYNCPLAYER_PREP),
+		ChanToClient: GC.GetNewChannel(SMALLWORLD_CHAN_TO_CLIENT_PIPES),
+		ChanToServer: GC.GetNewChannel(SMALLWORLD_CHAN_TO_SERVER_PIPES),
+		Ef:           ef, X: X, Y: Y, W: W, H: H, tile_path: tile_path, struct_path: struct_path,
 		FrameCounter: &fc,
 		ActivePlayer: GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), ef, sm),
 	}
@@ -32,15 +47,16 @@ func GetSmallWorld(X, Y, W, H float64, tile_path, struct_path, entity_path strin
 }
 func (sm *SmallWorld) New() (sm2 *SmallWorld) {
 	sm2 = &SmallWorld{Ents: make([]*SyncEntity, SYNCENTITIES_PREP),
-		Plys:          make([]*SyncPlayer, SYNCPLAYER_PREP),
-		SyncFrameChan: GC.CreateSyncString(""),
-		WorldChan:     GC.CreateSyncString(""),
-		Ef:            sm.Ef, X: sm.X, Y: sm.Y, W: sm.W, H: sm.H, tile_path: sm.tile_path, struct_path: sm.struct_path,
+		Plys:         make([]*SyncPlayer, SYNCPLAYER_PREP),
+		ChanToClient: GC.GetNewChannel(SMALLWORLD_CHAN_TO_CLIENT_PIPES),
+		ChanToServer: GC.GetNewChannel(SMALLWORLD_CHAN_TO_SERVER_PIPES),
+		Ef:           sm.Ef, X: sm.X, Y: sm.Y, W: sm.W, H: sm.H, tile_path: sm.tile_path, struct_path: sm.struct_path,
 		FrameCounter:        sm.FrameCounter,
 		ActivePlayer:        GetNewSyncPlayer(GetSVACID_Start_OwnPlayer(), sm.Ef, sm2),
 		Struct:              sm.Struct,
 		FrameChanSendPeriod: sm.FrameChanSendPeriod,
 		TimePerFrame:        sm.TimePerFrame,
+		World:               sm.World,
 	}
 	for i := range sm2.Ents {
 		sm2.Ents[i] = GetNewSyncEntity(GetSVACID_Start_Entities(i), sm.Ef, sm2)
@@ -69,12 +85,81 @@ type SmallWorld struct {
 
 	Struct *GE.WorldStructure
 
-	SyncFrameChan *GC.SyncString
-	WorldChan     *GC.SyncString
+	ChanToClient, ChanToServer *GC.Channel
+	World                      *World
 
 	TimePerFrame        int64
 	FrameChanSendPeriod int
 	FrameCounter        *int
+}
+
+func (sm *SmallWorld) SendToClient(idx int, msg []byte, force bool) {
+	sm.ChanToClient.SendToPipe(idx, msg, force)
+}
+func (sm *SmallWorld) SendToServer(idx int, msg []byte, force bool) {
+	sm.ChanToServer.SendToPipe(idx, msg, force)
+}
+func (sm *SmallWorld) ReceiveFromClient(sv GC.SyncVar, id int) {
+	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_PLACEHOLDER_TOSERV, SMALLWORLD_PLACEHOLDER_TOSERV)
+}
+func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {
+	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG, SMALLWORLD_SET_ACTIVEPLAYER_ID)
+	if sm.ChanToClient.JustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG) {
+		data := sm.ChanToClient.Pipes[SMALLWORLD_WORLDSTRUCTURE_MSG]
+		sm.ChangeWorldStruct(data)
+	}
+	if sm.ChanToClient.JustChanged(SMALLWORLD_TIMEPERFRAME_MSG) {
+		data := sm.ChanToClient.Pipes[SMALLWORLD_TIMEPERFRAME_MSG]
+		sm.TimePerFrame = cmp.BytesToInt64(data[0:8])
+	}
+	if sm.ChanToClient.JustChanged(SMALLWORLD_FRAMEANDTIME_MSG) {
+		data := sm.ChanToClient.Pipes[SMALLWORLD_FRAMEANDTIME_MSG]
+		*sm.FrameCounter = int(cmp.BytesToInt64(data[0:8]))
+		GE.ShitImDying(sm.Struct.CurrentTime.UnmarshalBinary(data[8:23]))
+		sm.Struct.UpdateTime(time.Duration(sm.TimePerFrame))
+	}
+	if sm.ChanToClient.JustChanged(SMALLWORLD_SET_ACTIVEPLAYER_ID) {
+		data := sm.ChanToClient.Pipes[SMALLWORLD_SET_ACTIVEPLAYER_ID]
+		if sm.ActivePlayer.HasPlayer() {
+			fmt.Println("New player ID received")
+			sm.ActivePlayer.ID = cmp.BytesToInt16(data[0:2])
+		} else {
+			fmt.Println("Error: Cannot set ID of nil player")
+		}
+	}
+}
+func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {
+	if wS != nil {
+		sm.Struct = wS
+		bs := wS.ToBytes()
+		sm.SendToClient(SMALLWORLD_WORLDSTRUCTURE_MSG, bs, true)
+	}
+	return nil
+}
+func (sm *SmallWorld) SetTimePerFrame(tpf int64) {
+	sm.TimePerFrame = tpf
+	sm.SendToClient(SMALLWORLD_TIMEPERFRAME_MSG, cmp.Int64ToBytes(sm.TimePerFrame), true)
+}
+func (sm *SmallWorld) SyncFrameAndTime() {
+	bs := make([]byte, 23)
+	copy(bs[0:8], cmp.Int64ToBytes(int64(*sm.FrameCounter)))
+	timBs, err := sm.Struct.CurrentTime.MarshalBinary()
+	GE.ShitImDying(err)
+	copy(bs[8:23], timBs)
+	sm.SendToClient(SMALLWORLD_FRAMEANDTIME_MSG, bs, true)
+}
+func (sm *SmallWorld) SetActivePlayerID(id int16) {
+	sm.ActivePlayer.ID = id
+	sm.SendToClient(SMALLWORLD_SET_ACTIVEPLAYER_ID, cmp.Int16ToBytes(id), true)
+}
+func (sm *SmallWorld) ChangeWorldStruct(data []byte) {
+	if len(data) > 0 {
+		wS, err := GE.LoadWorldStructureFromBytes(sm.X, sm.Y, sm.W, sm.H, data, sm.tile_path, sm.struct_path)
+		if err != nil {
+			panic(err)
+		}
+		sm.Struct = wS
+	}
 }
 
 func (sm *SmallWorld) SetEntitiesFromChunks(chL []*Chunk, idxs ...int) {
@@ -91,7 +176,7 @@ func (sm *SmallWorld) SetEntitiesFromChunks(chL []*Chunk, idxs ...int) {
 		}
 	}
 	for i := range sm.Ents {
-		if !containsI(setted, i) {
+		if containsI(setted, i) == -1 {
 			sm.Ents[i].SetEntity(nil)
 		}
 	}
@@ -158,13 +243,13 @@ func (sm *SmallWorld) Print(ents bool) (out string, c int) {
 	out = fmt.Sprintf("%v: ", *sm.FrameCounter)
 	if sm.ActivePlayer.HasPlayer() {
 		x, y, _ := sm.ActivePlayer.Player.GetPos()
-		out += fmt.Sprintf("(AP)(%p)|%0.2f, %0.2f, %s|", sm.ActivePlayer.Player, x, y, sm.ActivePlayer.Player.Entity.Actions().Print())
+		out += fmt.Sprintf("(AP)(%p)(%v)|%0.2f, %0.2f, %s|", sm.ActivePlayer.Player, sm.ActivePlayer.ID, x, y, sm.ActivePlayer.Player.Entity.Actions().Print())
 		c++
 	}
 	for _, pl := range sm.Plys {
 		if pl.HasPlayer() {
 			x, y, _ := pl.Player.GetPos()
-			out += fmt.Sprintf("(P)(%p)|%0.2f, %0.2f, %s|", pl.Player, x, y, pl.Player.Entity.Actions().Print())
+			out += fmt.Sprintf("(P)(%p)(%v)|%0.2f, %0.2f, %s|", pl.Player, pl.ID, x, y, pl.Player.Entity.Actions().Print())
 			c++
 		}
 	}
@@ -172,7 +257,7 @@ func (sm *SmallWorld) Print(ents bool) (out string, c int) {
 		for _, ent := range sm.Ents {
 			if ent.HasEntity() {
 				x, y, _ := ent.Entity.GetPos()
-				out += fmt.Sprintf("(E)(%p)|%0.2f, %0.2f, %s|", ent.Entity, x, y, ent.Entity.Actions().Print())
+				out += fmt.Sprintf("(E)(%p)(%v)|%0.2f, %0.2f, %s|", ent.Entity, ent.Entity.ID, x, y, ent.Entity.Actions().Print())
 				c++
 			}
 		}
@@ -200,60 +285,6 @@ func (sm *SmallWorld) GetSyncPlayersFromWorld(w *World) {
 	}
 	for i := idx; i < len(sm.Plys); i++ {
 		sm.Plys[idx].SetPlayer(nil)
-	}
-}
-func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {
-	if wS != nil {
-		sm.Struct = wS
-		bs := wS.ToBytes()
-		sm.WorldChan.SetBs(bs)
-	}
-	return nil
-}
-func (sm *SmallWorld) Draw(screen *ebiten.Image) {
-	sm.ActivePlayer.MoveWorld(sm.Struct)
-	sm.Struct.UpdateObjDrawables()
-	sm.Struct.Draw(screen)
-}
-func (sm *SmallWorld) UpdateVars() {
-	for _, e := range sm.Ents {
-		e.UpdateChanFromEnt()
-	}
-	for _, p := range sm.Plys {
-		p.UpdateChanFromPlayer()
-	}
-	if sm.HasWorldStruct() && *sm.FrameCounter%sm.FrameChanSendPeriod == 0 {
-		sm.SetFrameChangeVar()
-	}
-}
-func (sm *SmallWorld) SetTimePerFrame(tpf int64) {
-	sm.TimePerFrame = tpf
-	bs := make([]byte, 9)
-	bs[0] = 0
-	copy(bs[1:9], cmp.Int64ToBytes(sm.TimePerFrame))
-	sm.SyncFrameChan.SetBs(bs)
-}
-func (sm *SmallWorld) SetFrameChangeVar() {
-	bs := make([]byte, 24)
-	bs[0] = 1
-	copy(bs[1:9], cmp.Int64ToBytes(int64(*sm.FrameCounter)))
-	timBs, err := sm.Struct.CurrentTime.MarshalBinary()
-	GE.ShitImDying(err)
-	copy(bs[9:24], timBs)
-	sm.SyncFrameChan.SetBs(bs)
-}
-func (sm *SmallWorld) GetFrameChangeVar(bs []byte) {
-	if len(bs) < 9 {
-		return
-	}
-	idx := bs[0]
-	bs = bs[1:]
-	if idx == 0 {
-		sm.TimePerFrame = cmp.BytesToInt64(bs[0:8])
-	} else if idx == 1 {
-		*sm.FrameCounter = int(cmp.BytesToInt64(bs[0:8]))
-		GE.ShitImDying(sm.Struct.CurrentTime.UnmarshalBinary(bs[8:23]))
-		sm.Struct.UpdateTime(time.Duration(sm.TimePerFrame))
 	}
 }
 func (sm *SmallWorld) HasWorldStruct() bool {
@@ -309,19 +340,6 @@ func (sm *SmallWorld) RegisterOnEntityChangeListeners() {
 	}
 	sm.ActivePlayer.OnNewPlayer = sm.OnActivePlayerChange
 }
-func (sm *SmallWorld) OnWorldChanChange(sv GC.SyncVar, id int) {
-	data := sm.WorldChan.GetBs()
-	if len(data) > 0 {
-		wS, err := GE.LoadWorldStructureFromBytes(sm.X, sm.Y, sm.W, sm.H, data, sm.tile_path, sm.struct_path)
-		if err != nil {
-			panic(err)
-		}
-		sm.Struct = wS
-	}
-}
-func (sm *SmallWorld) OnSyncFrameChanChange(sv GC.SyncVar, id int) {
-	sm.GetFrameChangeVar(sm.SyncFrameChan.GetBs())
-}
 func (sm *SmallWorld) Register(m *GC.ServerManager, client *ws.Conn) {
 	AllSVs := make(map[int]GC.SyncVar)
 
@@ -334,9 +352,10 @@ func (sm *SmallWorld) Register(m *GC.ServerManager, client *ws.Conn) {
 		p.GetSyncVars(AllSVs)
 		//p.RegisterOnChange(m)
 	}
-	AllSVs[WorldFrameChan_ACID] = sm.SyncFrameChan
-	AllSVs[WorldStructChan_ACID] = sm.WorldChan
-	//m.RegisterOnChangeFunc(WorldChannel_ACID, []func(GC.SyncVar, int){sm.OnChannelChange}, clients...)
+	AllSVs[SM_TO_CLIENT] = sm.ChanToClient
+	AllSVs[SM_TO_SERVER] = sm.ChanToServer
+	m.RegisterOnChangeFunc(SM_TO_SERVER, []func(GC.SyncVar, int){sm.ReceiveFromClient}, client)
+
 	m.RegisterSyncVars(true, AllSVs, client)
 	m.Server.WaitForConfirmation(client)
 	sm.ActivePlayer.RegisterOnChange(m.Handler[client])
@@ -352,9 +371,23 @@ func (sm *SmallWorld) GetRegistered(m *GC.ClientManager) {
 		p.GetRegisterdSyncVars(m)
 		p.RegisterOnChange(m)
 	}
-	sm.SyncFrameChan = m.SyncvarsByACID[WorldFrameChan_ACID].(*GC.SyncString)
-	m.RegisterOnChangeFunc(WorldFrameChan_ACID, sm.OnSyncFrameChanChange)
-
-	sm.WorldChan = m.SyncvarsByACID[WorldStructChan_ACID].(*GC.SyncString)
-	m.RegisterOnChangeFunc(WorldStructChan_ACID, sm.OnWorldChanChange)
+	sm.ChanToClient = m.SyncvarsByACID[SM_TO_CLIENT].(*GC.Channel)
+	sm.ChanToServer = m.SyncvarsByACID[SM_TO_SERVER].(*GC.Channel)
+	m.RegisterOnChangeFunc(SM_TO_CLIENT, sm.ReceiveFromServer)
+}
+func (sm *SmallWorld) Draw(screen *ebiten.Image) {
+	sm.ActivePlayer.MoveWorld(sm.Struct)
+	sm.Struct.UpdateObjDrawables()
+	sm.Struct.Draw(screen)
+}
+func (sm *SmallWorld) UpdateVars() {
+	for _, e := range sm.Ents {
+		e.UpdateChanFromEnt()
+	}
+	for _, p := range sm.Plys {
+		p.UpdateChanFromPlayer()
+	}
+	if sm.HasWorldStruct() && *sm.FrameCounter%sm.FrameChanSendPeriod == 0 {
+		sm.SyncFrameAndTime()
+	}
 }
