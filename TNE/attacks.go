@@ -17,7 +17,7 @@ type projectileattackparams struct {
 }
 
 func (param projectileattackparams) createattack() Attack {
-	return ProjectileAttack{}
+	return &ProjectileAttack{}
 }
 
 type Attack interface {
