@@ -9,6 +9,20 @@ const (
 	ATTACK_FIREBALL = iota
 )
 
+type attackparams interface {
+	createattack() Attack
+}
+
+type projectileattackparams struct {
+	name   string
+	damage int
+	speed  float64
+}
+
+func (param projectileattackparams) createattack() Attack {
+	return &ProjectileAttack{}
+}
+
 /**
 Add every Attack to this list according to its index
 **/
@@ -72,18 +86,4 @@ func (attack *ProjectileAttack) IsFinished() bool {
 
 func (attack *ProjectileAttack) ToBytes() []byte {
 
-}
-
-type attackparams interface {
-	createattack() Attack
-}
-
-type projectileattackparams struct {
-	name   string
-	damage int
-	speed  float64
-}
-
-func (param projectileattackparams) createattack() Attack {
-	return ProjectileAttack{}
 }
