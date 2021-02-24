@@ -2,9 +2,17 @@ package TNE
 
 import "github.com/mortim-portim/GraphEng/GE"
 
+/**
+Add the index of every Attack as a constant
+**/
 const (
 	ATTACK_FIREBALL = iota
 )
+
+/**
+Add every Attack to this list according to its index
+**/
+var AttackGetter = []func(e *Entity, x, y float64) Attack{}
 
 type Attack interface {
 	GE.Drawable
@@ -14,13 +22,16 @@ type Attack interface {
 	-> pl is the player who started the attack
 	-> w is the world, on the client w = nil
 	-> if w != nil the attack should modifiy other entities (health) that it hits
+	-> if w == nil the attack should just be displayed on the client
 	**/
-	Start(pl *Player, w *World, x, y float64)
+	Start(e *Entity, w *World)
 	/**
 	-> updates the attack
 	-> is called every frame
+	-> if w != nil the attack should modifiy other entities (health) that it hits
+	-> if w == nil the attack should just be displayed on the client
 	**/
-	Update(pl *Player, w *World)
+	Update(e *Entity, w *World)
 	/**
 	-> returns if the attack is finished and can be deleted
 	**/

@@ -93,6 +93,13 @@ type Character struct {
 	Attacks       []byte
 }
 
+func (char *Character) GetAttack(idx int) int {
+	if idx >= 0 && idx < len(char.Attacks) {
+		return int(char.Attacks[idx])
+	}
+	return -1
+}
+
 func baseCompFunc(y float64, percents ...float64) func(vals ...float64) float64 {
 	return func(vals ...float64) (f float64) {
 		for i, val := range vals {
