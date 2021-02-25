@@ -16,6 +16,7 @@ type Attackparams interface {
 	Init(img *ebiten.Image)
 	Createattack(e *Entity, x, y float64, data interface{}) Attack
 	FromBytes(bs []byte) Attack
+	GetName() string
 }
 
 type Projectileattparam struct {
@@ -40,6 +41,10 @@ func (param Projectileattparam) Createattack(e *Entity, x, y float64, data inter
 func (param Projectileattparam) FromBytes(bs []byte) Attack {
 	vector := GE.VectorFromBytes(bs[:24])
 	return &ProjectileAttack{WObj: param.obj.Copy(), Projectileattparam: param, direction: vector, finished: false}
+}
+
+func (param Projectileattparam) GetName() string {
+	return param.Name
 }
 
 /**
