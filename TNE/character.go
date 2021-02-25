@@ -13,6 +13,7 @@ Character represents attributes, class, race, name of Player
 **/
 
 const ERROR_WRONG_CHAR_VERSION = "Wrong character version: %v"
+const NO_CHARACTER_DATA = "No character data supplied"
 
 var Classes []*Class = []*Class{
 	{"Fighter", 0, []string{"Berserker", "Defender"}},
@@ -177,33 +178,36 @@ func (char *Character) ToByte() (bs []byte) {
 	for i, prof := range char.Proficiencies {
 		profBs[i] = byte(prof + 1)
 	}
-	bs = cmp.Merge([][]byte{[]byte(char.Name), char.Attacks}, attrBs, profBs, []byte{byte(char.Race.id), byte(char.Class.id)})
+	bs = cmp.Merge([][]byte{[]byte(char.Name), char.Attacks, profBs}, attrBs, []byte{byte(char.Race.id), byte(char.Class.id)})
 	bs = append(bs, byte(0))
 	return
 }
 
 var CharLoader = map[byte]func([]byte) *Character{
 	0: func(bs []byte) (char *Character) {
-		data := cmp.Demerge(bs, []int{ABIL_COUNT, SCORE_COUNT, 2})
+		data := cmp.Demerge(bs, []int{ABIL_COUNT, 2})
 		char = &Character{
-			Race:          Races[int(data[2][0])],
-			Class:         Classes[int(data[2][1])],
+			Race:          Races[int(data[1][0])],
+			Class:         Classes[int(data[1][1])],
 			Attributes:    make([]int8, 0),
 			Proficiencies: make([]int8, 0),
 		}
 		for _, attrB := range data[0] {
 			char.Attributes = append(char.Attributes, int8(attrB)-1)
 		}
-		for _, profB := range data[1] {
+		for _, profB := range data[4] {
 			char.Proficiencies = append(char.Proficiencies, int8(profB)-1)
 		}
-		char.Name = string(data[3])
-		char.Attacks = data[4]
+		char.Name = string(data[2])
+		char.Attacks = data[3]
 		return
 	},
 }
 
 func LoadChar(bs []byte) (*Character, error) {
+	if len(bs) <= 1 {
+		return nil, fmt.Errorf(NO_CHARACTER_DATA)
+	}
 	v := bs[len(bs)-1]
 	bs = bs[:len(bs)-1]
 	fnc, ok := CharLoader[v]

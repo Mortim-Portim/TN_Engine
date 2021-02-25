@@ -113,7 +113,7 @@ func (e *Entity) GetCreationData() (bs []byte) {
 	bs = append(bs, cmp.Int16ToBytes(e.ID)...)
 	if e.Char != nil {
 		charData := e.Char.ToByte()
-		copy(bs[50:50+len(charData)], charData)
+		bs = append(bs, charData...)
 	}
 	return
 }
