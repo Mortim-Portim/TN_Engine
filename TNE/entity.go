@@ -10,7 +10,7 @@ import (
 )
 
 type EntityUpdater interface {
-	Update(e *Entity, world *World)
+	Update(e *Entity, world *SmallWorld)
 	Copy() EntityUpdater
 }
 
@@ -29,12 +29,13 @@ type Entity struct {
 	UpdateCallBack                                EntityUpdater
 }
 
-func (e *Entity) MakeAttackSynced(a Attack, w *World) {
+func (e *Entity) MakeAttackSynced(a Attack, w *SmallWorld) {
 	e.Actions().AddAttack(a)
 	e.MakeAttackUnSynced(a, w)
 }
-func (e *Entity) MakeAttackUnSynced(a Attack, w *World) {
+func (e *Entity) MakeAttackUnSynced(a Attack, w *SmallWorld) {
 	e.ActiveAttacks = append(e.ActiveAttacks, a)
+	w.Struct.Add_Drawables = w.Struct.Add_Drawables.Add(a)
 	a.Start(e, w)
 }
 func (e *Entity) MoveTiles(tiles float64) {
@@ -89,9 +90,9 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 	if e.showMana {
 		e.drawBar(screen, 2, color.RGBA{0, 0, 255, 255}, leftTopX, leftTopY, xStart, yStart, sqSize, e.ManaPercent())
 	}
-	for _, attack := range e.ActiveAttacks {
-		attack.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
-	}
+	// for _, attack := range e.ActiveAttacks {
+	// 	attack.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
+	// }
 }
 
 const Health_Stamina_Mana_Bar_Rel = 0.05
@@ -117,13 +118,16 @@ func (e *Entity) GetCreationData() (bs []byte) {
 	}
 	return
 }
-func (e *Entity) OnEobjUpdate(eo *Eobj, w *World) {
+func (e *Entity) OnEobjUpdate(eo *Eobj, w *SmallWorld) {
 	if e.UpdateCallBack != nil {
 		e.UpdateCallBack.Update(e, w)
 	}
 	for i, attack := range e.ActiveAttacks {
 		attack.Update(e, w)
 		if attack.IsFinished() {
+			err, dws := w.Struct.Add_Drawables.Remove(e.ActiveAttacks[i])
+			w.Struct.Add_Drawables = dws
+			GE.ShitImDying(err)
 			e.ActiveAttacks[i] = nil
 		}
 	}

@@ -93,7 +93,7 @@ func (as *ActionStack) Apply(e *Entity, sm *SmallWorld) {
 			e.keepMoving = cmp.BytesToBools(data[0:1])[0]
 			return 1
 		case SyncAction_ManualAnimationChange:
-			e.setAnim(uint8(data[0]))
+			e.SetAnimManual(uint8(data[0]))
 			return 1
 		case SyncAction_Position:
 			e.PosFromBytes(data)
@@ -110,7 +110,7 @@ func (as *ActionStack) Apply(e *Entity, sm *SmallWorld) {
 			l := int(cmp.BytesToInt16(data[0:2]))
 			a, err := GetAttackFromBytes(data[2 : 2+l])
 			if err == nil {
-				e.MakeAttackUnSynced(a, sm.World)
+				e.MakeAttackUnSynced(a, sm)
 			} else {
 				panic(fmt.Sprintf("Error reconstructing Attack: %v", err))
 			}

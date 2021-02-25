@@ -52,7 +52,7 @@ func (c *Chunk) RemoveEntity(e *Entity) {
 		c.RemoveEntityByIdx(idx)
 	}
 }
-func (c *Chunk) UpdateEntities(w *World, server bool, Collider func(x, y, w, h float64) bool) (removed []*Entity) {
+func (c *Chunk) UpdateEntities(w *SmallWorld, server bool, Collider func(x, y, w, h float64) bool) (removed []*Entity) {
 	removed = make([]*Entity, 0)
 	for idx, entity := range c.entities {
 		if entity != nil {

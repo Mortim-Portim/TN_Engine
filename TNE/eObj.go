@@ -12,6 +12,15 @@ import (
 	cmp "github.com/mortim-portim/GraphEng/compression"
 )
 
+const (
+	EOBJ_IDLE_LEFT = uint8(iota)
+	EOBJ_IDLE_RIGHT
+	EOBJ_RUNNING_LEFT
+	EOBJ_RUNNING_RIGHT
+	EOBJ_ATTACKING_LEFT
+	EOBJ_ATTACKING_RIGHT
+)
+
 const CREATURE_WOBJ = "#WOBJ"
 
 var ERR_WRONG_BYTE_LENGTH = errors.New("Wrong byte length")
@@ -36,18 +45,19 @@ type Eobj struct {
 
 	movingFrames, movedFrames int
 	movingStepSize            float64
+	manualAnimation           bool
 
 	actions *ActionStack
 
 	factoryCreationId int16
 	frame             *int
-	updateFunc        func(eo *Eobj, world *World)
+	updateFunc        func(eo *Eobj, world *SmallWorld)
 }
 
 //Copys the Eobj
 func (e *Eobj) Copy() (e2 *Eobj) {
 	e2 = &Eobj{e.WObj.Copy(), nil, e.currentAnim, e.xPos, e.yPos, e.orientation.Copy(), e.neworientation.Copy(), e.isMoving, e.keepMoving,
-		e.frozen, e.movingFrames, e.movedFrames, e.movingStepSize, e.actions.Copy(), e.factoryCreationId, e.frame, e.updateFunc}
+		e.frozen, e.movingFrames, e.movedFrames, e.movingStepSize, e.manualAnimation, e.actions.Copy(), e.factoryCreationId, e.frame, e.updateFunc}
 	e2.anims = make([]*GE.DayNightAnim, len(e.anims))
 	for i, anim := range e.anims {
 		if anim != nil {
@@ -58,7 +68,7 @@ func (e *Eobj) Copy() (e2 *Eobj) {
 }
 
 //Updates the movement and calls the provided Update func afterwards
-func (e *Eobj) UpdateAll(w *World, server bool, Collider func(x, y, w, h float64) bool) {
+func (e *Eobj) UpdateAll(w *SmallWorld, server bool, Collider func(x, y, w, h float64) bool) {
 	if e.frozen {
 		return
 	}
@@ -78,7 +88,9 @@ func (e *Eobj) UpdateAll(w *World, server bool, Collider func(x, y, w, h float64
 			e.moveInDirection(e.orientation, Collider)
 			e.movedFrames++
 		}
-		e.UpdateOrientationAnim()
+		if !e.manualAnimation {
+			e.UpdateOrientationAnim()
+		}
 	}
 	if e.updateFunc != nil {
 		e.updateFunc(e, w)
@@ -134,14 +146,14 @@ func (e *Eobj) SetAnim(idx uint8) {
 		return
 	}
 	e.actions.AddManualAnimationChange(idx)
-	e.setAnim(idx)
+	e.SetAnimManual(idx)
 }
 func (e *Eobj) AddPos() {
 	e.actions.AddPosition(e.PosToBytes())
 }
 
 //Unsynced ...............................................................................................................................................
-func (e *Eobj) RegisterUpdateFunc(u func(eo *Eobj, world *World)) {
+func (e *Eobj) RegisterUpdateFunc(u func(eo *Eobj, world *SmallWorld)) {
 	e.updateFunc = u
 }
 func (e *Eobj) StartInteraction(syncEntIDX int16) {
@@ -208,6 +220,19 @@ func (e *Eobj) UpdateOrientationAnim() {
 			idx += 2
 		}
 		e.setAnim(uint8(idx))
+	}
+}
+func (e *Eobj) SetAnimManual(idx uint8) {
+	if e.frozen {
+		return
+	}
+	e.manualAnimation = true
+	if e.setAnim(idx) {
+		e.WObj.RestartAnim()
+		e.WObj.ListenForNextAnimFinish(func() {
+			e.manualAnimation = false
+			e.UpdateOrientationAnim()
+		})
 	}
 }
 func (e *Eobj) setAnim(idx uint8) bool {

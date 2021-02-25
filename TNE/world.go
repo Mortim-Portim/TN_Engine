@@ -21,7 +21,7 @@ type WorldParams struct {
 }
 
 //
-func GetWorld(wp *WorldParams, path string) (w *World) {
+func GetWorld(wp *WorldParams, path string, sm *SmallWorld) (w *World) {
 	if path[len(path)-1:] != "/" {
 		path += "/"
 	}
@@ -32,8 +32,9 @@ func GetWorld(wp *WorldParams, path string) (w *World) {
 		Ef:           wp.Ef,
 		Players:      make([]*Player, 0),
 		Entities:     make([]*Entity, 0),
+		Sm:           sm,
 	}
-
+	sm.World = w
 	w.Structure = wp.Struct
 	//	w.Structure.SetLightStats(10, 255, 0.3)
 	//	w.Structure.SetLightLevel(15)
@@ -78,6 +79,7 @@ type World struct {
 
 	Path         string
 	FrameCounter *int
+	Sm           *SmallWorld
 }
 
 func (w *World) ResetActions() {
@@ -127,7 +129,7 @@ Updates all chunks around all players with the specified delta of the world
 **/
 func (w *World) UpdateAllPlayer() {
 	for _, pl := range w.Players {
-		pl.Update(w, true, w.Structure.Collides)
+		pl.Update(w.Sm, true, w.Structure.Collides)
 	}
 }
 
@@ -164,7 +166,7 @@ func (w *World) UpdateChunks(idxs []int) (chnged []int) {
 	for _, idx := range idxs {
 		if w.Chunks[idx].LastUpdateFrame != *w.FrameCounter {
 			w.Chunks[idx].LastUpdateFrame = *w.FrameCounter
-			rems := w.Chunks[idx].UpdateEntities(w, false, w.Structure.Collides)
+			rems := w.Chunks[idx].UpdateEntities(w.Sm, false, w.Structure.Collides)
 			if len(rems) > 0 {
 				allRems = append(allRems, rems...)
 				chnged = append(chnged, idx)
