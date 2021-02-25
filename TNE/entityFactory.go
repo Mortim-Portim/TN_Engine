@@ -66,7 +66,9 @@ func (cf *EntityFactory) LoadEntityFromCreationData(data []byte) (*Entity, error
 	e.ShowStamina(shows[1])
 	e.ShowMana(shows[2])
 	e.ID = cmp.BytesToInt16(data[48:50])
-	e.Char, err = LoadChar(data[50:])
+	if len(data) > 50 {
+		e.Char, err = LoadChar(data[50:])
+	}
 	return e, err
 }
 func (cf *EntityFactory) Print() (out string) {
