@@ -27,23 +27,23 @@ type Projectileattparam struct {
 	obj    *GE.WObj
 }
 
-func (param Projectileattparam) Init(img *ebiten.Image) {
+func (param *Projectileattparam) Init(img *ebiten.Image) {
 	daynight := GE.GetDayNightAnim(0, 0, 10, 10, 1, 1, img)
 	param.obj = GE.GetWObj(daynight, 5, 5, 0, 0, 16, 0, param.Name)
 }
 
-func (param Projectileattparam) Createattack(e *Entity, x, y float64, data interface{}) Attack {
+func (param *Projectileattparam) Createattack(e *Entity, x, y float64, data interface{}) Attack {
 	px, py, _ := e.GetMiddle()
 	vector := (&GE.Vector{x - px, y - py, 0}).Normalize().Mul(param.Speed)
 	return &ProjectileAttack{WObj: param.obj.Copy(), Projectileattparam: param, direction: vector, finished: false}
 }
 
-func (param Projectileattparam) FromBytes(bs []byte) Attack {
+func (param *Projectileattparam) FromBytes(bs []byte) Attack {
 	vector := GE.VectorFromBytes(bs[:24])
 	return &ProjectileAttack{WObj: param.obj.Copy(), Projectileattparam: param, direction: vector, finished: false}
 }
 
-func (param Projectileattparam) GetName() string {
+func (param *Projectileattparam) GetName() string {
 	return param.Name
 }
 
@@ -51,7 +51,7 @@ func (param Projectileattparam) GetName() string {
 Add every Attack to this list according to its index
 **/
 var Attacks = []Attackparams{
-	Projectileattparam{"Fireball", ATTACK_FIREBALL, 5, 5, nil},
+	&Projectileattparam{"Fireball", ATTACK_FIREBALL, 5, 5, nil},
 }
 
 type Attack interface {
