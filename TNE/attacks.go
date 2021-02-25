@@ -95,7 +95,7 @@ func GetAttackFromBytes(bs []byte) (a Attack, err error) {
 
 type ProjectileAttack struct {
 	*GE.WObj
-	Projectileattparam
+	*Projectileattparam
 	direction *GE.Vector
 	finished  bool
 }
