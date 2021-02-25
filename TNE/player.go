@@ -1,6 +1,8 @@
 package TNE
 
 import (
+	"fmt"
+
 	"github.com/hajimehoshi/ebiten"
 	"github.com/mortim-portim/GraphEng/GE"
 )
@@ -29,6 +31,8 @@ func (p *Player) ChangeToAttack(idx int) {
 	}
 }
 func (p *Player) StartAttack(x, y float64) {
+	px, py, _ := p.GetMiddle()
+	fmt.Printf("Starting Attack %v to (%0.2f|%0.2f), from player at (%0.2f|%0.2f)\n", p.CurrentAttack, x, y, px, py)
 	a := Attacks[p.CurrentAttack].Createattack(p.Entity, x, y, nil)
 	p.MakeAttackSynced(a, nil)
 }
