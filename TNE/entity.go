@@ -79,6 +79,19 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	return e, nil
 }
 
+func (e *Entity) DoDamage(value float32) {
+	e.SetHealth(e.Health() - float32(value))
+	e.CheckDeath(0)
+}
+func (e *Entity) CheckDeath(cause int) {
+	if e.Health() <= 0 {
+		e.setDead(cause)
+	}
+}
+func (e *Entity) setDead(cause int) {
+
+}
+
 func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
 	e.Eobj.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
 	if e.showHealth {
