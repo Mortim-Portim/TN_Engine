@@ -117,9 +117,11 @@ func (sm *SmallWorld) SendToServer(idx int, msg []byte, force bool) {
 	sm.ChanToServer.SendToPipe(idx, msg, force)
 }
 func (sm *SmallWorld) ReceiveFromClient(sv GC.SyncVar, id int) {
+	fmt.Println("func (sm *SmallWorld) ReceiveFromClient(sv GC.SyncVar, id int) {")
 	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_PLACEHOLDER_TOSERV, SMALLWORLD_PLACEHOLDER_TOSERV)
 }
 func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {
+	fmt.Println("func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {")
 	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG, SMALLWORLD_SET_ACTIVEPLAYER_ID)
 	if sm.ChanToClient.JustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG) {
 		data := sm.ChanToClient.Pipes[SMALLWORLD_WORLDSTRUCTURE_MSG]

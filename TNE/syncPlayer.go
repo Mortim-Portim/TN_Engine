@@ -1,6 +1,8 @@
 package TNE
 
 import (
+	"fmt"
+
 	ws "github.com/gorilla/websocket"
 	"github.com/mortim-portim/GameConn/GC"
 	"github.com/mortim-portim/GraphEng/GE"
@@ -55,13 +57,16 @@ func (sp *SyncPlayer) SetNilPlayer() {
 
 //Is called when the channel receives
 func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {
+	fmt.Println("func (sp *SyncPlayer) OnChannelChange(sv GC.SyncVar, id int) {")
 	defer sp.Se.channel.ResetJustChanged(SYNCENT_CHAN_PLAYER_CREATION, SYNCENT_CHAN_PLAYER_CREATION)
 	sp.Se.OnChannelChange(sv, id)
 	if sp.Se.channel.JustChanged(SYNCENT_CHAN_PLAYER_CREATION) {
 		data := sp.Se.channel.Pipes[SYNCENT_CHAN_PLAYER_CREATION]
 		if data[0] == 0 {
+			fmt.Println("sp.SetNilPlayer()")
 			sp.SetNilPlayer()
 		} else if data[0] == 1 {
+			fmt.Println("sp.CreatePlayerFromVars(data[1:])")
 			err := sp.CreatePlayerFromVars(data[1:])
 			if err != nil {
 				panic(err)

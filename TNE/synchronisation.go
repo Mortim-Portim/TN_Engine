@@ -69,10 +69,13 @@ func (se *SyncEntity) SetNilEntity() {
 	se.Entity = nil
 }
 func (se *SyncEntity) OnChannelChange(sv GC.SyncVar, id int) {
+	fmt.Println("func (se *SyncEntity) OnChannelChange(sv GC.SyncVar, id int) {")
 	defer se.channel.ResetJustChanged(SYNCENT_CHAN_ENTITY_CREATION, SYNCENT_CHAN_ACTIONS)
 	if se.channel.JustChanged(SYNCENT_CHAN_ENTITY_CREATION) {
+		fmt.Println("se.CreateEntFromChan()")
 		se.CreateEntFromChan()
 	} else {
+		fmt.Println("se.UpdateEntFromChan()")
 		se.UpdateEntFromChan()
 	}
 }
@@ -101,6 +104,7 @@ func (se *SyncEntity) UpdateChanFromEnt() {
 func (se *SyncEntity) UpdateEntFromChan() {
 	if se.HasEntity() {
 		if se.channel.JustChanged(SYNCENT_CHAN_ACTIONS) {
+			fmt.Println("se.Entity.Actions().AppendAndApply(se.channel.Pipes[SYNCENT_CHAN_ACTIONS], se.Entity, se.sm)")
 			se.Entity.Actions().AppendAndApply(se.channel.Pipes[SYNCENT_CHAN_ACTIONS], se.Entity, se.sm)
 		}
 	}
