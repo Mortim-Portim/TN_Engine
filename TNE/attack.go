@@ -31,7 +31,7 @@ var Attacks = []Attackparams{
 		Range:       20,
 		HitboxW:     0.42,
 		HitboxH:     0.42,
-		spriteWidth: 10,
+		spriteWidth: 15,
 		squareSize:  24,
 		layer:       10},
 }
