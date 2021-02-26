@@ -37,6 +37,7 @@ func (param *ProjectileAttParam) createProjectileAtt(dir *GE.Vector, px, py floa
 	nWobj := param.obj.Copy()
 	nWobj.SetMiddle(px, py)
 	nWobj.GetAnim().SetRotation(dir.GetRotationZ())
+
 	return &ProjectileAttack{WObj: nWobj, ProjectileAttParam: param, direction: dir, finished: false}
 }
 
@@ -63,6 +64,13 @@ func (attack *ProjectileAttack) Start(e *Entity, w *SmallWorld) {
 func (attack *ProjectileAttack) Update(e *Entity, w *SmallWorld) {
 	attack.WObj.MoveBy(attack.direction.X, attack.direction.Y)
 	attack.frame++
+
+	OnRectWithWorldStructObjCollision(e.Hitbox, w.Struct, func(so *GE.StructureObj, ent *Entity, ply *Player) {
+		if ply != nil {
+
+		}
+		attack.finished = true
+	})
 
 	if attack.frame >= attack.Range/attack.Speed {
 		attack.finished = true
