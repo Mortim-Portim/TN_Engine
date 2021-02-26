@@ -45,7 +45,13 @@ type Direction struct {
 }
 
 func (d *Direction) ToRight() bool {
-	return d.ID == ENTITY_ORIENTATION_R || d.ID == ENTITY_ORIENTATION_RU || d.ID == ENTITY_ORIENTATION_RD || d.ID == ENTITY_ORIENTATION_D
+	return d.ID == ENTITY_ORIENTATION_R || d.ID == ENTITY_ORIENTATION_RU || d.ID == ENTITY_ORIENTATION_RD
+}
+func (d *Direction) ToLeft() bool {
+	return d.ID == ENTITY_ORIENTATION_L || d.ID == ENTITY_ORIENTATION_LU || d.ID == ENTITY_ORIENTATION_LD
+}
+func (d *Direction) UpOrDown() bool {
+	return d.ID == ENTITY_ORIENTATION_D || d.ID == ENTITY_ORIENTATION_U
 }
 func (d *Direction) Print() string {
 	if d.ID == ENTITY_ORIENTATION_LU {

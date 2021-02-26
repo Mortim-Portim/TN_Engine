@@ -199,40 +199,31 @@ func (e *Eobj) UpdateOrientationAnim() {
 	if e.frozen {
 		return
 	}
-	idx := e.orientation.ID
-	if idx == ENTITY_ORIENTATION_U || idx == ENTITY_ORIENTATION_D {
-		idx = int(e.currentAnim)
-		if idx >= 2 {
-			idx -= 2
-		}
-		if e.isMoving {
-			idx += 2
-		}
-		e.setAnim(uint8(idx))
-	} else if idx >= 0 {
-		if idx == ENTITY_ORIENTATION_LU || idx == ENTITY_ORIENTATION_LD {
-			idx = ENTITY_ORIENTATION_L
-		}
-		if idx == ENTITY_ORIENTATION_RU || idx == ENTITY_ORIENTATION_RD {
-			idx = ENTITY_ORIENTATION_R
-		}
-		if e.isMoving {
-			idx += 2
-		}
-		e.setAnim(uint8(idx))
+
+	idx := ENTITY_ORIENTATION_R
+	if e.currentAnim%2 == 0 {
+		idx = ENTITY_ORIENTATION_L
 	}
+	if e.orientation.ToRight() {
+		idx = ENTITY_ORIENTATION_R
+	} else if e.orientation.ToLeft() {
+		idx = ENTITY_ORIENTATION_L
+	}
+	if e.isMoving {
+		idx += 2
+	}
+	e.setAnim(uint8(idx))
 }
 func (e *Eobj) SetAnimManual(idx uint8) {
-	if e.frozen {
+	if e.frozen || e.manualAnimation {
 		return
 	}
-	e.manualAnimation = true
-	old_idx := e.currentAnim
 	if e.setAnim(idx) {
+		e.manualAnimation = true
 		e.WObj.RestartAnim()
 		e.WObj.ListenForNextAnimFinish(func() {
 			e.manualAnimation = false
-			e.setAnim(old_idx)
+			e.UpdateOrientationAnim()
 		})
 	}
 }

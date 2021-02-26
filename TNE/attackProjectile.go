@@ -54,9 +54,9 @@ type ProjectileAttack struct {
 }
 
 func (attack *ProjectileAttack) Start(e *Entity, w *SmallWorld) {
-	idx := EOBJ_ATTACKING_LEFT
-	if e.orientation.ToRight() {
-		idx = EOBJ_ATTACKING_RIGHT
+	idx := EOBJ_ATTACKING_RIGHT
+	if e.currentAnim%2 == 0 {
+		idx = EOBJ_ATTACKING_LEFT
 	}
 	e.SetAnimManual(idx)
 }
@@ -65,12 +65,11 @@ func (attack *ProjectileAttack) Update(e *Entity, w *SmallWorld) {
 	attack.WObj.MoveBy(attack.direction.X, attack.direction.Y)
 	attack.frame++
 
-	OnRectWithWorldStructObjCollision(e.Hitbox, w.Struct, func(so *GE.StructureObj, ent *Entity, ply *Player) {
+	OnRectWithWorldStructObjCollision(attack.Hitbox, w.Struct, func(so *GE.StructureObj, ent *Entity, ply *Player) {
+		if ply != nil && e.ID == ply.ID {
+			return
+		}
 		if ply != nil {
-			if e.ID == ply.ID {
-				return
-			}
-
 			ply.DealDamage(attack.Damage)
 		}
 		attack.finished = true
