@@ -93,23 +93,6 @@ type SmallWorld struct {
 	FrameCounter        *int
 }
 
-func (sm *SmallWorld) GetAllEntities() (ents []*Entity) {
-	ents = make([]*Entity, 0)
-	if sm.ActivePlayer.HasPlayer() {
-		ents = append(ents, sm.ActivePlayer.Entity)
-	}
-	for _, pl := range sm.Plys {
-		if pl.HasPlayer() {
-			ents = append(ents, pl.Entity)
-		}
-	}
-	for _, ent := range sm.Ents {
-		if ent.HasEntity() {
-			ents = append(ents, ent.Entity)
-		}
-	}
-	return
-}
 func (sm *SmallWorld) SendToClient(idx int, msg []byte, force bool) {
 	sm.ChanToClient.SendToPipe(idx, msg, force)
 }

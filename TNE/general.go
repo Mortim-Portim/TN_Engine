@@ -5,9 +5,43 @@ import (
 	"runtime"
 
 	"github.com/hajimehoshi/ebiten"
+	"github.com/mortim-portim/GraphEng/GE"
 )
 
 var FPS = 30.0
+
+func OnRectWithWorldStructObjCollision(rect *GE.Rectangle, ws *GE.WorldStructure, onColl func(so *GE.StructureObj, ent *Entity, ply *Player)) {
+	var Hitbox *GE.Rectangle
+	var so *GE.StructureObj
+	var ent *Entity
+	var ply *Player
+	ws.IterateOverCollidablesInRect(rect.BoundingRect(ws.TileMat.Focus()), func(dw GE.Drawable) {
+		Hitbox = nil
+		so = nil
+		ent = nil
+		ply = nil
+		SO, ok := dw.(*GE.StructureObj)
+		if ok {
+			Hitbox = SO.Hitbox
+			so = SO
+		} else {
+			ENT, ok := dw.(*Entity)
+			if ok {
+				Hitbox = ENT.Hitbox
+				ent = ENT
+			} else {
+				PLY, ok := dw.(*Player)
+				if ok {
+					Hitbox = PLY.Hitbox
+					ply = PLY
+				}
+			}
+		}
+		if Hitbox != nil && Hitbox.Overlaps(rect) {
+			onColl(so, ent, ply)
+		}
+	})
+}
 
 func CPUs() int {
 	return runtime.NumCPU()
