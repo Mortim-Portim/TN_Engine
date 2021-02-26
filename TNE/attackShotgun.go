@@ -23,7 +23,7 @@ func (param *ShotgunAttackParam) Createattack(e *Entity, x, y float64, data inte
 
 	for i := range attacklist {
 		dir := maindir.Copy()
-		dir.RotateZ(param.rotation * (float64(i)/(float64(param.count)-1) - 1/2))
+		dir.RotateZ(param.rotation * (float64(i)/float64(param.count-1) - 0.5))
 		attacklist[i] = param.createProjectileAtt(dir, px, py)
 	}
 	return attacklist
