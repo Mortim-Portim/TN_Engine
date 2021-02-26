@@ -1,4 +1,6 @@
-/*package TNE
+package TNE
+
+/*
 
 import (
 	"github.com/hajimehoshi/ebiten"
