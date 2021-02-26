@@ -227,11 +227,12 @@ func (e *Eobj) SetAnimManual(idx uint8) {
 		return
 	}
 	e.manualAnimation = true
+	old_idx := e.currentAnim
 	if e.setAnim(idx) {
 		e.WObj.RestartAnim()
 		e.WObj.ListenForNextAnimFinish(func() {
 			e.manualAnimation = false
-			e.UpdateOrientationAnim()
+			e.setAnim(old_idx)
 		})
 	}
 }

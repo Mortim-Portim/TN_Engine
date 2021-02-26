@@ -44,6 +44,9 @@ type Direction struct {
 	Dx, Dy     float64
 }
 
+func (d *Direction) ToRight() bool {
+	return d.ID == ENTITY_ORIENTATION_R || d.ID == ENTITY_ORIENTATION_RU || d.ID == ENTITY_ORIENTATION_RD || d.ID == ENTITY_ORIENTATION_D
+}
 func (d *Direction) Print() string {
 	if d.ID == ENTITY_ORIENTATION_LU {
 		return "Left Up"

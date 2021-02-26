@@ -8,16 +8,18 @@ import (
 //Creates an Attack that consist of one Projectile
 
 type ProjectileAttParam struct {
-	Name         string
-	Id           int
-	Damage       int
-	Speed, Range float64
-	obj          *GE.WObj
+	Name                           string
+	Id                             int
+	Damage                         int
+	Speed, Range                   float64
+	obj                            *GE.WObj
+	HitboxW, HitboxH               float64
+	spriteWidth, squareSize, layer int
 }
 
 func (param *ProjectileAttParam) Init(img *ebiten.Image) {
-	daynight := GE.GetDayNightAnim(0, 0, 10, 10, 10, 0, img)
-	param.obj = GE.GetWObj(daynight, 0.42, 0.42, 0, 0, 24, 10, param.Name)
+	daynight := GE.GetDayNightAnim(0, 0, 10, 10, param.spriteWidth, 0, img)
+	param.obj = GE.GetWObj(daynight, param.HitboxW, param.HitboxH, 0, 0, param.squareSize, int8(param.layer), param.Name)
 }
 
 func (param *ProjectileAttParam) Createattack(e *Entity, x, y float64, data interface{}) []Attack {
@@ -52,12 +54,9 @@ type ProjectileAttack struct {
 
 func (attack *ProjectileAttack) Start(e *Entity, w *SmallWorld) {
 	idx := EOBJ_ATTACKING_LEFT
-	dir := ENTITY_ORIENTATION_L
-	if attack.direction.GetRotationZ() < 180 {
+	if e.orientation.ToRight() {
 		idx = EOBJ_ATTACKING_RIGHT
-		dir = ENTITY_ORIENTATION_R
 	}
-	e.ChangeOrientation((&Direction{ID: dir}).FromID())
 	e.SetAnimManual(idx)
 }
 

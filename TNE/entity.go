@@ -125,9 +125,11 @@ func (e *Entity) OnEobjUpdate(eo *Eobj, w *SmallWorld) {
 	for i, attack := range e.ActiveAttacks {
 		attack.Update(e, w)
 		if attack.IsFinished() {
-			err, dws := w.Struct.Add_Drawables.Remove(e.ActiveAttacks[i])
-			w.Struct.Add_Drawables = dws
-			GE.ShitImDying(err)
+			if w != nil && w.HasWorldStruct() {
+				err, dws := w.Struct.Add_Drawables.Remove(e.ActiveAttacks[i])
+				GE.ShitImDying(err)
+				w.Struct.Add_Drawables = dws
+			}
 			e.ActiveAttacks[i] = nil
 		}
 	}

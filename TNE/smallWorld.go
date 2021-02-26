@@ -100,11 +100,9 @@ func (sm *SmallWorld) SendToServer(idx int, msg []byte, force bool) {
 	sm.ChanToServer.SendToPipe(idx, msg, force)
 }
 func (sm *SmallWorld) ReceiveFromClient(sv GC.SyncVar, id int) {
-	fmt.Println("func (sm *SmallWorld) ReceiveFromClient(sv GC.SyncVar, id int) {")
 	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_PLACEHOLDER_TOSERV, SMALLWORLD_PLACEHOLDER_TOSERV)
 }
 func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {
-	fmt.Println("func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {")
 	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG, SMALLWORLD_SET_ACTIVEPLAYER_ID)
 	if sm.ChanToClient.JustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG) {
 		data := sm.ChanToClient.Pipes[SMALLWORLD_WORLDSTRUCTURE_MSG]
@@ -213,16 +211,16 @@ func (sm *SmallWorld) UpdateAll(server bool) {
 		sm.Struct.UpdateTime(time.Duration(sm.TimePerFrame))
 	}
 	if sm.ActivePlayer.HasPlayer() {
-		sm.ActivePlayer.UpdateAll(nil, server, sm.Struct.Collides)
+		sm.ActivePlayer.UpdateAll(sm, server, sm.Struct.Collides)
 	}
 	for _, pl := range sm.Plys {
 		if pl.HasPlayer() {
-			pl.Player.UpdateAll(nil, server, sm.Struct.Collides)
+			pl.Player.UpdateAll(sm, server, sm.Struct.Collides)
 		}
 	}
 	for _, ent := range sm.Ents {
 		if ent.HasEntity() {
-			ent.Entity.UpdateAll(nil, server, sm.Struct.Collides)
+			ent.Entity.UpdateAll(sm, server, sm.Struct.Collides)
 		}
 	}
 }

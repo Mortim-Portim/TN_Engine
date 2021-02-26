@@ -23,7 +23,17 @@ type Attackparams interface {
 Add every Attack to this list according to its index
 **/
 var Attacks = []Attackparams{
-	&ProjectileAttParam{"Fireball", ATTACK_FIREBALL, 5, 0.2, 20, nil},
+	&ProjectileAttParam{
+		Name:        "Fireball",
+		Id:          ATTACK_FIREBALL,
+		Damage:      5,
+		Speed:       0.2,
+		Range:       20,
+		HitboxW:     0.42,
+		HitboxH:     0.42,
+		spriteWidth: 10,
+		squareSize:  24,
+		layer:       10},
 }
 
 type Attack interface {
