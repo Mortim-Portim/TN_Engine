@@ -149,7 +149,6 @@ func (e *Eobj) SetAnim(idx uint8) {
 	e.SetAnimManual(idx)
 }
 func (e *Eobj) AddPos() {
-	fmt.Println("Adding Pos to Actions")
 	e.actions.AddPosition(e.PosToBytes())
 }
 
