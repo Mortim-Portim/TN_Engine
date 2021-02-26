@@ -21,7 +21,7 @@ func NewActionStack(data ...byte) *ActionStack {
 	if len(data) == 0 {
 		data = []byte{}
 	}
-	as := &ActionStack{data, false}
+	as := &ActionStack{data, true}
 	return as
 }
 

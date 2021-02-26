@@ -10,7 +10,7 @@ import (
 func RollDice(dices, sides int) int {
 	res := 0
 	for i := 0; i < dices; i++ {
-		res += rand.Intn(sides)+1
+		res += rand.Intn(sides) + 1
 	}
 	return res
 }
@@ -22,5 +22,5 @@ func RandomInt(l, u int) int {
 }
 
 func RandomFloat(l, u float64) float64 {
-	return rand.Float64()*(u-l+1)+l
+	return rand.Float64()*(u-l+1) + l
 }
