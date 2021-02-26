@@ -30,11 +30,15 @@ func (p *Player) ChangeToAttack(idx int) {
 		p.CurrentAttack = i
 	}
 }
+
 func (p *Player) StartAttack(x, y float64, sm *SmallWorld) {
 	px, py, _ := p.GetMiddle()
 	fmt.Printf("Starting Attack %v to (%0.2f|%0.2f), from player at (%0.2f|%0.2f)\n", p.CurrentAttack, x, y, px, py)
 	a := Attacks[p.CurrentAttack].Createattack(p.Entity, x, y, nil)
-	p.MakeAttackSynced(a, sm)
+
+	for _, att := range a {
+		p.MakeAttackSynced(att, sm)
+	}
 }
 
 //Move (tiles float64) - moves the player at his own speed

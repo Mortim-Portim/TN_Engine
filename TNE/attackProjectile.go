@@ -5,46 +5,49 @@ import (
 	"github.com/mortim-portim/GraphEng/GE"
 )
 
-type Projectileattparam struct {
-	Name   string
-	Id     int
-	Damage int
-	Speed  float64
-	obj    *GE.WObj
+//Creates an Attack that consist of one Projectile
+
+type ProjectileAttParam struct {
+	Name         string
+	Id           int
+	Damage       int
+	Speed, Range float64
+	obj          *GE.WObj
 }
 
-func (param *Projectileattparam) Init(img *ebiten.Image) {
+func (param *ProjectileAttParam) Init(img *ebiten.Image) {
 	daynight := GE.GetDayNightAnim(0, 0, 10, 10, 10, 0, img)
 	param.obj = GE.GetWObj(daynight, 0.42, 0.42, 0, 0, 24, 10, param.Name)
 }
 
-func (param *Projectileattparam) Createattack(e *Entity, x, y float64, data interface{}) Attack {
+func (param *ProjectileAttParam) Createattack(e *Entity, x, y float64, data interface{}) []Attack {
 	px, py, _ := e.GetMiddle()
 	dir := (&GE.Vector{x - px, y - py, 0}).Normalize().Mul(param.Speed)
-	return param.createProjectileAtt(dir, px, py)
+	return []Attack{param.createProjectileAtt(dir, px, py)}
 }
 
-func (param *Projectileattparam) FromBytes(bs []byte) Attack {
+func (param *ProjectileAttParam) FromBytes(bs []byte) Attack {
 	dir := GE.XYVectorFromBytes(bs[:16])
 	pos := GE.XYVectorFromBytes(bs[16:])
 	return param.createProjectileAtt(dir, pos.X, pos.Y)
 }
-func (param *Projectileattparam) createProjectileAtt(dir *GE.Vector, px, py float64) Attack {
+func (param *ProjectileAttParam) createProjectileAtt(dir *GE.Vector, px, py float64) Attack {
 	nWobj := param.obj.Copy()
 	nWobj.SetMiddle(px, py)
 	nWobj.GetAnim().SetRotation(dir.GetRotationZ())
-	return &ProjectileAttack{WObj: nWobj, Projectileattparam: param, direction: dir, finished: false}
+	return &ProjectileAttack{WObj: nWobj, ProjectileAttParam: param, direction: dir, finished: false}
 }
 
-func (param *Projectileattparam) GetName() string {
+func (param *ProjectileAttParam) GetName() string {
 	return param.Name
 }
 
 type ProjectileAttack struct {
 	*GE.WObj
-	*Projectileattparam
+	*ProjectileAttParam
 	direction *GE.Vector
 	finished  bool
+	frame     float64
 }
 
 func (attack *ProjectileAttack) Start(e *Entity, w *SmallWorld) {
@@ -60,10 +63,15 @@ func (attack *ProjectileAttack) Start(e *Entity, w *SmallWorld) {
 
 func (attack *ProjectileAttack) Update(e *Entity, w *SmallWorld) {
 	attack.WObj.MoveBy(attack.direction.X, attack.direction.Y)
+	attack.frame++
+
+	if attack.frame >= attack.Range/attack.Speed {
+		attack.finished = true
+	}
 }
 
 func (attack *ProjectileAttack) IsFinished() bool {
-	return false
+	return attack.finished
 }
 
 func (attack *ProjectileAttack) ToBytes() []byte {

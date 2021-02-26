@@ -14,7 +14,7 @@ const (
 
 type Attackparams interface {
 	Init(img *ebiten.Image)
-	Createattack(e *Entity, x, y float64, data interface{}) Attack
+	Createattack(e *Entity, x, y float64, data interface{}) []Attack
 	FromBytes(bs []byte) Attack
 	GetName() string
 }
@@ -23,7 +23,7 @@ type Attackparams interface {
 Add every Attack to this list according to its index
 **/
 var Attacks = []Attackparams{
-	&Projectileattparam{"Fireball", ATTACK_FIREBALL, 5, 0.2, nil},
+	&ProjectileAttParam{"Fireball", ATTACK_FIREBALL, 5, 0.2, 20, nil},
 }
 
 type Attack interface {
