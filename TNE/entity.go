@@ -79,7 +79,7 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	return e, nil
 }
 
-func (e *Entity) DoDamage(value float32) {
+func (e *Entity) DealDamage(value float32) {
 	e.SetHealth(e.Health() - float32(value))
 	e.CheckDeath(0)
 }
