@@ -10,6 +10,7 @@ Add the index of every Attack as a constant
 **/
 const (
 	ATTACK_FIREBALL = iota
+	ATTACK_SHOTGUNFIRE
 )
 
 type Attackparams interface {
@@ -34,6 +35,20 @@ var Attacks = []Attackparams{
 		spriteWidth: 15,
 		squareSize:  24,
 		layer:       10},
+	&ShotgunAttackParam{ProjectileAttParam: ProjectileAttParam{
+		Name:        "Fireball",
+		Id:          ATTACK_SHOTGUNFIRE,
+		Damage:      5,
+		Speed:       0.2,
+		Range:       20,
+		HitboxW:     0.42,
+		HitboxH:     0.42,
+		spriteWidth: 10,
+		squareSize:  24,
+		layer:       10},
+		rotation: 60,
+		count:    4,
+	},
 }
 
 type Attack interface {
