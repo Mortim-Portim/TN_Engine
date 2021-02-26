@@ -37,7 +37,6 @@ func (param *ProjectileAttParam) createProjectileAtt(dir *GE.Vector, px, py floa
 	nWobj := param.obj.Copy()
 	nWobj.SetMiddle(px, py)
 	nWobj.GetAnim().SetRotation(dir.GetRotationZ())
-
 	return &ProjectileAttack{WObj: nWobj, ProjectileAttParam: param, direction: dir, finished: false}
 }
 
