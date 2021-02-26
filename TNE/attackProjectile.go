@@ -67,7 +67,11 @@ func (attack *ProjectileAttack) Update(e *Entity, w *SmallWorld) {
 
 	OnRectWithWorldStructObjCollision(e.Hitbox, w.Struct, func(so *GE.StructureObj, ent *Entity, ply *Player) {
 		if ply != nil {
+			if e.ID == ply.ID {
+				return
+			}
 
+			ply.DealDamage(attack.Damage)
 		}
 		attack.finished = true
 	})
