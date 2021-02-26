@@ -1,7 +1,5 @@
 package TNE
 
-/*
-
 import (
 	"github.com/hajimehoshi/ebiten"
 	"github.com/mortim-portim/GraphEng/GE"
@@ -9,7 +7,8 @@ import (
 
 type ShotgunAttackParam struct {
 	ProjectileAttParam
-	count, rotation int
+	count    int
+	rotation float64
 }
 
 func (param *ShotgunAttackParam) Init(img *ebiten.Image) {
@@ -20,19 +19,12 @@ func (param *ShotgunAttackParam) Init(img *ebiten.Image) {
 func (param *ShotgunAttackParam) Createattack(e *Entity, x, y float64, data interface{}) []Attack {
 	px, py, _ := e.GetMiddle()
 	maindir := (&GE.Vector{x - px, y - py, 0}).Normalize().Mul(param.Speed)
-	attacklist := make([]Attack)
-	return []Attack{param.createProjectileAtt(dir, px, py)}
-}
+	attacklist := make([]Attack, param.count)
 
-/*func (param *ShotgunAttackParam) FromBytes(bs []byte) Attack {
-	dir := GE.XYVectorFromBytes(bs[:16])
-	pos := GE.XYVectorFromBytes(bs[16:])
-	return param.createProjectileAtt(dir, pos.X, pos.Y)
+	for i := range attacklist {
+		dir := maindir.Copy()
+		dir.RotateZ(param.rotation * (float64(i)/(float64(param.count)-1) - 1/2))
+		attacklist[i] = param.createProjectileAtt(dir, px, py)
+	}
+	return attacklist
 }
-func (param *ShotgunAttackParam) createProjectileAtt(dir *GE.Vector, px, py float64) Attack {
-	nWobj := param.obj.Copy()
-	nWobj.SetMiddle(px, py)
-	nWobj.GetAnim().SetRotation(dir.GetRotationZ())
-	return &ProjectileAttack{WObj: nWobj, ProjectileAttParam: param, direction: dir, finished: false}
-}
-*/
