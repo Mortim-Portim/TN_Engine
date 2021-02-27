@@ -109,14 +109,17 @@ func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {
 	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG, SMALLWORLD_SET_ACTIVEPLAYER_ID)
 	if sm.ChanToClient.JustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG) {
 		data := sm.ChanToClient.Pipes[SMALLWORLD_WORLDSTRUCTURE_MSG]
+		fmt.Println("WorldStructure received: ", data)
 		sm.ChangeWorldStruct(data)
 	}
 	if sm.ChanToClient.JustChanged(SMALLWORLD_TIMEPERFRAME_MSG) {
 		data := sm.ChanToClient.Pipes[SMALLWORLD_TIMEPERFRAME_MSG]
+		fmt.Println("TimePerFrame received: ", data)
 		sm.TimePerFrame = cmp.BytesToInt64(data[0:8])
 	}
 	if sm.ChanToClient.JustChanged(SMALLWORLD_FRAMEANDTIME_MSG) {
 		data := sm.ChanToClient.Pipes[SMALLWORLD_FRAMEANDTIME_MSG]
+		fmt.Println("FrameAndTime received: ", data)
 		*sm.FrameCounter = int(cmp.BytesToInt64(data[0:8]))
 		GE.ShitImDying(sm.Struct.CurrentTime.UnmarshalBinary(data[8:23]))
 		sm.Struct.UpdateTime(time.Duration(sm.TimePerFrame))
