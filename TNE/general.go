@@ -21,17 +21,17 @@ func OnRectWithWorldStructObjCollision(rect *GE.Rectangle, ws *GE.WorldStructure
 		ent = nil
 		ply = nil
 		SO, ok := dw.(*GE.StructureObj)
-		if ok {
+		if ok && SO.Collides {
 			Hitbox = SO.Hitbox
 			so = SO
 		} else {
 			ENT, ok := dw.(*Entity)
-			if ok {
+			if ok && ENT.Collides() {
 				Hitbox = ENT.Hitbox
 				ent = ENT
 			} else {
 				PLY, ok := dw.(*Player)
-				if ok {
+				if ok && PLY.Collides() {
 					Hitbox = PLY.Hitbox
 					ply = PLY
 				}

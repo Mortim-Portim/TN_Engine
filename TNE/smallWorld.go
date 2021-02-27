@@ -93,6 +93,9 @@ type SmallWorld struct {
 	FrameCounter        *int
 }
 
+func (sm *SmallWorld) IsOnServer() bool {
+	return sm.World != nil
+}
 func (sm *SmallWorld) SendToClient(idx int, msg []byte, force bool) {
 	sm.ChanToClient.SendToPipe(idx, msg, force)
 }

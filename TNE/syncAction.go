@@ -15,6 +15,7 @@ const (
 	SyncAction_Position
 	SyncAction_Interaction
 	SyncAction_Attack
+	SyncAction_SetDead
 )
 
 func NewActionStack(data ...byte) *ActionStack {
@@ -57,6 +58,9 @@ func (as *ActionStack) Print() (out string) {
 		case SyncAction_Attack:
 			out += "|Attack"
 			return int(cmp.BytesToInt16(data[0:2])) + 2
+		case SyncAction_SetDead:
+			out += "|SetDead"
+			return 1
 		}
 		return 0
 	})
@@ -115,6 +119,9 @@ func (as *ActionStack) Apply(e *Entity, sm *SmallWorld) {
 				panic(fmt.Sprintf("Error reconstructing Attack: %v", err))
 			}
 			return l + 2
+		case SyncAction_SetDead:
+			e.setDead(data[0])
+			return 1
 		}
 		return 0
 	})
@@ -172,4 +179,7 @@ func (as *ActionStack) AddInteraction(freeze bool, id int16) {
 func (as *ActionStack) AddAttack(a Attack) {
 	aBs := a.ToBytes()
 	as.Add(SyncAction_Attack, append(cmp.Int16ToBytes(int16(len(aBs))), aBs...)...)
+}
+func (as *ActionStack) AddSetDead(cause byte) {
+	as.Add(SyncAction_SetDead, cause)
 }

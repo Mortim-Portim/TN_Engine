@@ -21,6 +21,7 @@ type Entity struct {
 	Char          *Character
 	ActiveAttacks []Attack
 
+	isDead                                        bool
 	Speed                                         float64
 	onHealthChange, onStaminaChange, onManaChange func(old, new float32)
 	maxHealth, maxStamina, maxMana                float32
@@ -79,20 +80,38 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	return e, nil
 }
 
-func (e *Entity) DealDamage(value float32) {
+func (e *Entity) DealDamage(value float32, server bool) {
+	if e.IsDead() {
+		return
+	}
 	e.SetHealth(e.Health() - float32(value))
-	e.CheckDeath(0)
-}
-func (e *Entity) CheckDeath(cause int) {
-	if e.Health() <= 0 {
-		e.setDead(cause)
+	if server {
+		e.CheckDeath(0)
 	}
 }
-func (e *Entity) setDead(cause int) {
-
+func (e *Entity) CheckDeath(cause byte) {
+	if e.Health() <= 0 {
+		e.setDeadSynced(cause)
+		e.SetHealth(0)
+	}
 }
-
+func (e *Entity) setDead(cause byte) {
+	e.isDead = true
+}
+func (e *Entity) setDeadSynced(cause byte) {
+	e.setDead(cause)
+	e.actions.AddSetDead(cause)
+}
+func (e *Entity) IsDead() bool {
+	return e.isDead
+}
+func (e *Entity) Collides() bool {
+	return !e.isDead
+}
 func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart, yStart, sqSize float64) {
+	if e.IsDead() {
+		return
+	}
 	e.Eobj.Draw(screen, lv, leftTopX, leftTopY, xStart, yStart, sqSize)
 	if e.showHealth {
 		e.drawBar(screen, 0, color.RGBA{255, 0, 0, 255}, leftTopX, leftTopY, xStart, yStart, sqSize, e.HealthPercent())

@@ -69,7 +69,7 @@ func (attack *ProjectileAttack) Update(e *Entity, w *SmallWorld) {
 			return
 		}
 		if ply != nil {
-			ply.DealDamage(attack.Damage)
+			ply.DealDamage(attack.Damage, w.IsOnServer())
 		}
 		attack.finished = true
 	})
