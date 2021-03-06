@@ -16,6 +16,7 @@ const (
 	SMALLWORLD_TIMEPERFRAME_MSG
 	SMALLWORLD_FRAMEANDTIME_MSG
 	SMALLWORLD_SET_ACTIVEPLAYER_ID
+	SMALLWORLD_ACTIVEPLAYER_DEATH
 
 	SMALLWORLD_CHAN_TO_CLIENT_PIPES
 )
@@ -106,7 +107,7 @@ func (sm *SmallWorld) ReceiveFromClient(sv GC.SyncVar, id int) {
 	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_PLACEHOLDER_TOSERV, SMALLWORLD_PLACEHOLDER_TOSERV)
 }
 func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {
-	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG, SMALLWORLD_SET_ACTIVEPLAYER_ID)
+	defer sm.ChanToClient.ResetJustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG, SMALLWORLD_ACTIVEPLAYER_DEATH)
 	if sm.ChanToClient.JustChanged(SMALLWORLD_WORLDSTRUCTURE_MSG) {
 		data := sm.ChanToClient.Pipes[SMALLWORLD_WORLDSTRUCTURE_MSG]
 		fmt.Println("WorldStructure received: ", data)
@@ -132,6 +133,17 @@ func (sm *SmallWorld) ReceiveFromServer(sv GC.SyncVar, id int) {
 		} else {
 			fmt.Println("Error: Cannot set ID of nil player")
 		}
+	}
+	if sm.ChanToClient.JustChanged(SMALLWORLD_ACTIVEPLAYER_DEATH) {
+		data := sm.ChanToClient.Pipes[SMALLWORLD_ACTIVEPLAYER_DEATH]
+		if sm.ActivePlayer.HasPlayer() {
+			sm.ActivePlayer.setDead(data[0])
+		}
+	}
+}
+func (sm *SmallWorld) CheckActivePlayerDeath() {
+	if sm.ActivePlayer.Player.JustDied() {
+		sm.SendToClient(SMALLWORLD_ACTIVEPLAYER_DEATH, []byte{sm.ActivePlayer.DeathCause}, true)
 	}
 }
 func (sm *SmallWorld) SetWorldStruct(wS *GE.WorldStructure) error {

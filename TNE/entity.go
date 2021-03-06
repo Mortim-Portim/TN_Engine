@@ -21,11 +21,12 @@ type Entity struct {
 	Char          *Character
 	ActiveAttacks []Attack
 
-	isDead                                        bool
+	DeathCause                                    byte
+	isDead, justDied                              bool
 	Speed                                         float64
-	onHealthChange, onStaminaChange, onManaChange func(old, new float32)
-	maxHealth, maxStamina, maxMana                float32
-	health, stamina, mana                         float32
+	onHealthChange, onStaminaChange, onManaChange func(old, new float64)
+	maxHealth, maxStamina, maxMana                float64
+	health, stamina, mana                         float64
 	showHealth, showStamina, showMana             bool
 	UpdateCallBack                                EntityUpdater
 }
@@ -80,11 +81,11 @@ func LoadEntity(path string, frameCounter *int) (*Entity, error) {
 	return e, nil
 }
 
-func (e *Entity) DealDamage(value float32, server bool) {
+func (e *Entity) DealDamage(value float64, server bool) {
 	if e.IsDead() {
 		return
 	}
-	e.SetHealth(e.Health() - float32(value))
+	e.SetHealth(e.Health() - float64(value))
 	if server {
 		e.CheckDeath(0)
 	}
@@ -92,11 +93,16 @@ func (e *Entity) DealDamage(value float32, server bool) {
 func (e *Entity) CheckDeath(cause byte) {
 	if e.Health() <= 0 {
 		e.setDeadSynced(cause)
-		e.SetHealth(0)
 	}
 }
 func (e *Entity) setDead(cause byte) {
+	if e.IsDead() {
+		return
+	}
+	e.SetHealth(-1)
 	e.isDead = true
+	e.justDied = true
+	e.DeathCause = cause
 }
 func (e *Entity) setDeadSynced(cause byte) {
 	e.setDead(cause)
@@ -104,6 +110,11 @@ func (e *Entity) setDeadSynced(cause byte) {
 }
 func (e *Entity) IsDead() bool {
 	return e.isDead
+}
+func (e *Entity) JustDied() (b bool) {
+	b = e.justDied
+	e.justDied = false
+	return
 }
 func (e *Entity) Collides() bool {
 	return !e.isDead
@@ -129,7 +140,7 @@ func (e *Entity) Draw(screen *ebiten.Image, lv int16, leftTopX, leftTopY, xStart
 
 const Health_Stamina_Mana_Bar_Rel = 0.05
 
-func (e *Entity) drawBar(screen *ebiten.Image, idx int, col color.Color, leftTopX, leftTopY, xStart, yStart, sqSize float64, percent float32) {
+func (e *Entity) drawBar(screen *ebiten.Image, idx int, col color.Color, leftTopX, leftTopY, xStart, yStart, sqSize float64, percent float64) {
 	bnds := e.Drawbox.Bounds()
 	height := Health_Stamina_Mana_Bar_Rel * (bnds.X + bnds.Y)
 	width := bnds.X
@@ -141,7 +152,7 @@ func (e *Entity) drawBar(screen *ebiten.Image, idx int, col color.Color, leftTop
 
 func (e *Entity) GetCreationData() (bs []byte) {
 	bs = e.Eobj.GetCreationData()
-	bs = append(bs, cmp.Float32sToBytes(e.MaxHealth(), e.MaxStamina(), e.MaxMana(), e.Health(), e.Stamina(), e.Mana())...)
+	bs = append(bs, cmp.Float32sToBytes(float32(e.MaxHealth()), float32(e.MaxStamina()), float32(e.MaxMana()), float32(e.Health()), float32(e.Stamina()), float32(e.Mana()))...)
 	bs = append(bs, cmp.BoolsToBytes(e.DoesShowHealth(), e.DoesShowStamina(), e.DoesShowMana())[0])
 	bs = append(bs, cmp.Int16ToBytes(e.ID)...)
 	if e.Char != nil {
@@ -188,47 +199,77 @@ func (e *Entity) Init() {
 		e.Eobj.RegisterUpdateFunc(e.OnEobjUpdate)
 	}
 }
-func (e *Entity) SetMaxHealth(v float32)  { e.maxHealth = v }
-func (e *Entity) SetMaxStamina(v float32) { e.maxStamina = v }
-func (e *Entity) SetMaxMana(v float32)    { e.maxMana = v }
-func (e *Entity) SetHealth(v float32) {
-	if e.onHealthChange != nil {
-		e.onHealthChange(e.health, v)
+func (e *Entity) SetMaxHealth(v float64)  { e.maxHealth = v }
+func (e *Entity) SetMaxStamina(v float64) { e.maxStamina = v }
+func (e *Entity) SetMaxMana(v float64)    { e.maxMana = v }
+func (e *Entity) SetHealth(v float64) {
+	if v != e.health {
+		e.health = v
+		if v < 0 {
+			e.health = 0.0
+		}
+		if e.onHealthChange != nil {
+			e.onHealthChange(e.health, v)
+		}
 	}
-	e.health = v
 }
-func (e *Entity) SetStamina(v float32) {
-	if e.onStaminaChange != nil {
-		e.onStaminaChange(e.stamina, v)
+func (e *Entity) SetStamina(v float64) {
+	if v != e.stamina {
+		e.stamina = v
+		if v < 0 {
+			e.stamina = 0.0
+		}
+		if e.onStaminaChange != nil {
+			e.onStaminaChange(e.stamina, v)
+		}
 	}
-	e.stamina = v
 }
-func (e *Entity) SetMana(v float32) {
-	if e.onManaChange != nil {
-		e.onManaChange(e.mana, v)
+func (e *Entity) SetMana(v float64) {
+	if v != e.mana {
+		e.mana = v
+		if v < 0 {
+			e.mana = 0.0
+		}
+		if e.onManaChange != nil {
+			e.onManaChange(e.mana, v)
+		}
 	}
-	e.mana = v
 }
-func (e *Entity) ResetHealth()            { e.SetHealth(e.maxHealth) }
-func (e *Entity) ResetStamina()           { e.SetStamina(e.maxStamina) }
-func (e *Entity) ResetMana()              { e.SetMana(e.maxMana) }
-func (e *Entity) ResetHSM()               { e.ResetHealth(); e.ResetStamina(); e.ResetMana() }
-func (e *Entity) MaxHealth() float32      { return e.maxHealth }
-func (e *Entity) MaxStamina() float32     { return e.maxStamina }
-func (e *Entity) MaxMana() float32        { return e.maxMana }
-func (e *Entity) Health() float32         { return e.health }
-func (e *Entity) Stamina() float32        { return e.stamina }
-func (e *Entity) Mana() float32           { return e.mana }
-func (e *Entity) HealthPercent() float32  { return e.health / e.maxHealth }
-func (e *Entity) StaminaPercent() float32 { return e.stamina / e.maxStamina }
-func (e *Entity) ManaPercent() float32    { return e.mana / e.maxMana }
-func (e *Entity) ShowHealth(v bool)       { e.showHealth = v }
-func (e *Entity) ShowStamina(v bool)      { e.showStamina = v }
-func (e *Entity) ShowMana(v bool)         { e.showMana = v }
-func (e *Entity) DoesShowHealth() bool    { return e.showHealth }
-func (e *Entity) DoesShowStamina() bool   { return e.showStamina }
-func (e *Entity) DoesShowMana() bool      { return e.showMana }
+func (e *Entity) ResetHealth()        { e.SetHealth(e.maxHealth) }
+func (e *Entity) ResetStamina()       { e.SetStamina(e.maxStamina) }
+func (e *Entity) ResetMana()          { e.SetMana(e.maxMana) }
+func (e *Entity) ResetHSM()           { e.ResetHealth(); e.ResetStamina(); e.ResetMana() }
+func (e *Entity) MaxHealth() float64  { return e.maxHealth }
+func (e *Entity) MaxStamina() float64 { return e.maxStamina }
+func (e *Entity) MaxMana() float64    { return e.maxMana }
+func (e *Entity) Health() float64     { return e.health }
+func (e *Entity) Stamina() float64    { return e.stamina }
+func (e *Entity) Mana() float64       { return e.mana }
+func (e *Entity) HealthPercent() float64 {
+	if e.health <= 0 {
+		return 0
+	}
+	return e.health / e.maxHealth
+}
+func (e *Entity) StaminaPercent() float64 {
+	if e.stamina <= 0 {
+		return 0
+	}
+	return e.stamina / e.maxStamina
+}
+func (e *Entity) ManaPercent() float64 {
+	if e.mana <= 0 {
+		return 0
+	}
+	return e.mana / e.maxMana
+}
+func (e *Entity) ShowHealth(v bool)     { e.showHealth = v }
+func (e *Entity) ShowStamina(v bool)    { e.showStamina = v }
+func (e *Entity) ShowMana(v bool)       { e.showMana = v }
+func (e *Entity) DoesShowHealth() bool  { return e.showHealth }
+func (e *Entity) DoesShowStamina() bool { return e.showStamina }
+func (e *Entity) DoesShowMana() bool    { return e.showMana }
 
-func (e *Entity) SetOnHealthChange(fnc func(old, new float32))  { e.onHealthChange = fnc }
-func (e *Entity) SetOnStaminaChange(fnc func(old, new float32)) { e.onStaminaChange = fnc }
-func (e *Entity) SetOnManaChange(fnc func(old, new float32))    { e.onManaChange = fnc }
+func (e *Entity) SetOnHealthChange(fnc func(old, new float64))  { e.onHealthChange = fnc }
+func (e *Entity) SetOnStaminaChange(fnc func(old, new float64)) { e.onStaminaChange = fnc }
+func (e *Entity) SetOnManaChange(fnc func(old, new float64))    { e.onManaChange = fnc }

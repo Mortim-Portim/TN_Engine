@@ -10,7 +10,7 @@ import (
 type ProjectileAttParam struct {
 	Name                           string
 	Id                             int
-	Damage                         float32
+	Damage                         float64
 	Speed, Range                   float64
 	obj                            *GE.WObj
 	HitboxW, HitboxH               float64
