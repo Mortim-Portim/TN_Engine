@@ -161,6 +161,11 @@ func GetCharacter(name string, raceId, classId int) (char *Character) {
 	copy(char.Proficiencies, char.Race.Proficiencies)
 	return
 }
+
+func GetBlankCharacter() *Character {
+	return &Character{Attributes: make([]int8, 6)}
+}
+
 func (char *Character) Copy() *Character {
 	if char == nil {
 		return nil

@@ -24,30 +24,20 @@ type Attackparams interface {
 Add every Attack to this list according to its index
 **/
 var Attacks = []Attackparams{
-	&ProjectileAttParam{
-		Name:        "Fireball",
-		Id:          ATTACK_FIREBALL,
-		Damage:      5,
-		Speed:       0.2,
-		Range:       20,
-		HitboxW:     0.42,
-		HitboxH:     0.42,
-		spriteWidth: 15,
-		squareSize:  24,
-		layer:       10},
-	&ShotgunAttackParam{ProjectileAttParam: ProjectileAttParam{
-		Name:        "Fireball",
-		Id:          ATTACK_SHOTGUNFIRE,
-		Damage:      5,
-		Speed:       0.2,
-		Range:       20,
-		HitboxW:     0.42,
-		HitboxH:     0.42,
-		spriteWidth: 10,
-		squareSize:  24,
-		layer:       10},
-		rotation: 60,
-		count:    4,
+	&BeamAttParam{
+		ProjectileAttParam: &ProjectileAttParam{
+			Name:        "Fireball",
+			Id:          ATTACK_FIREBALL,
+			Damage:      5,
+			Speed:       0.5,
+			Range:       20,
+			HitboxW:     0.42,
+			HitboxH:     0.42,
+			spriteWidth: 15,
+			squareSize:  24,
+			layer:       10,
+		},
+		Count: 5,
 	},
 }
 
