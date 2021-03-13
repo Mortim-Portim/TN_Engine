@@ -2,7 +2,7 @@ package TNE
 
 import (
 	"github.com/mortim-portim/GraphEng/GE"
-	//"github.com/hajimehoshi/ebiten/v2"
+	//ebiten "github.com/hajimehoshi/ebiten/v2"
 	"errors"
 	//cmp "github.com/mortim-portim/GraphEng/compression"
 )
