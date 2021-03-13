@@ -5,7 +5,7 @@ import (
 	"time"
 
 	ws "github.com/gorilla/websocket"
-	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/mortim-portim/GameConn/GC"
 	"github.com/mortim-portim/GraphEng/GE"
 	cmp "github.com/mortim-portim/GraphEng/compression"
