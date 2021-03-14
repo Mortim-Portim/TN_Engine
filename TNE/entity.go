@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/hajimehoshi/ebiten"
+	ebiten "github.com/hajimehoshi/ebiten/v2"
 	"github.com/mortim-portim/GraphEng/GE"
 	cmp "github.com/mortim-portim/GraphEng/compression"
 )
